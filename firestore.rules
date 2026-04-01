@@ -1,0 +1,128 @@
+rules_version = '2';
+
+service cloud.firestore {
+  match /databases/{database}/documents {
+    
+    // ===============================================================
+    // Helper Functions
+    // ===============================================================
+    
+    function isAuthenticated() {
+      return request.auth != null;
+    }
+    
+    function isAdmin() {
+      // Allow the initial user to be admin, or check custom claims if implemented
+      return isAuthenticated() && (
+        request.auth.token.email == "manojprajapatiworks@gmail.com" && request.auth.token.email_verified == true
+      );
+    }
+    
+    function hasRequiredFields(fields) {
+      return request.resource.data.keys().hasAll(fields);
+    }
+    
+    function hasOnlyAllowedFields(fields) {
+      return request.resource.data.keys().hasOnly(fields);
+    }
+    
+    function validStringLength(field, minLen, maxLen) {
+      return request.resource.data[field] is string &&
+        request.resource.data[field].size() >= minLen &&
+        request.resource.data[field].size() <= maxLen;
+    }
+
+    // ===============================================================
+    // Domain Validators
+    // ===============================================================
+    
+    function isValidSiteSettings(data) {
+      return hasOnlyAllowedFields(['heroTitle', 'heroSubtitle', 'phoneNumber', 'lineId', 'email', 'address', 'aboutText']) &&
+             data.heroTitle is string && data.heroTitle.size() > 0 && data.heroTitle.size() <= 200 &&
+             data.heroSubtitle is string && data.heroSubtitle.size() > 0 && data.heroSubtitle.size() <= 500 &&
+             data.phoneNumber is string && data.phoneNumber.size() > 0 && data.phoneNumber.size() <= 50 &&
+             data.lineId is string && data.lineId.size() > 0 && data.lineId.size() <= 100 &&
+             data.email is string && data.email.size() > 0 && data.email.size() <= 100 &&
+             (!('address' in data) || (data.address is string && data.address.size() <= 500)) &&
+             (!('aboutText' in data) || (data.aboutText is string && data.aboutText.size() <= 5000));
+    }
+    
+    function isValidService(data) {
+      return hasOnlyAllowedFields(['title', 'description', 'category', 'iconName', 'order']) &&
+             data.title is string && data.title.size() > 0 && data.title.size() <= 100 &&
+             data.description is string && data.description.size() > 0 && data.description.size() <= 2000 &&
+             data.category is string && data.category.size() > 0 && data.category.size() <= 50 &&
+             data.iconName is string && data.iconName.size() > 0 && data.iconName.size() <= 50 &&
+             (!('order' in data) || data.order is number);
+    }
+    
+    function isValidInquiry(data) {
+      return hasOnlyAllowedFields(['name', 'email', 'phone', 'message', 'status', 'createdAt']) &&
+             data.name is string && data.name.size() > 0 && data.name.size() <= 100 &&
+             (!('email' in data) || (data.email is string && data.email.size() <= 100)) &&
+             (!('phone' in data) || (data.phone is string && data.phone.size() <= 50)) &&
+             data.message is string && data.message.size() > 0 && data.message.size() <= 5000 &&
+             data.status in ['new', 'read', 'resolved'] &&
+             data.createdAt is string;
+    }
+
+    function isValidTestimonial(data) {
+      return hasOnlyAllowedFields(['author', 'role', 'content', 'rating', 'order']) &&
+             data.author is string && data.author.size() > 0 && data.author.size() <= 100 &&
+             (!('role' in data) || (data.role is string && data.role.size() <= 100)) &&
+             data.content is string && data.content.size() > 0 && data.content.size() <= 1000 &&
+             data.rating is number && data.rating >= 1 && data.rating <= 5 &&
+             (!('order' in data) || data.order is number);
+    }
+
+    function isValidFAQ(data) {
+      return hasOnlyAllowedFields(['question', 'answer', 'order']) &&
+             data.question is string && data.question.size() > 0 && data.question.size() <= 500 &&
+             data.answer is string && data.answer.size() > 0 && data.answer.size() <= 2000 &&
+             (!('order' in data) || data.order is number);
+    }
+
+    // ===============================================================
+    // Rules
+    // ===============================================================
+
+    // Site Settings (Public Read, Admin Write)
+    match /settings/global {
+      allow read: if true;
+      allow create, update: if isAdmin() && isValidSiteSettings(request.resource.data);
+      allow delete: if false; // Settings should not be deleted, only updated
+    }
+
+    // Services (Public Read, Admin Write)
+    match /services/{serviceId} {
+      allow read: if true;
+      allow create: if isAdmin() && isValidService(request.resource.data);
+      allow update: if isAdmin() && isValidService(request.resource.data);
+      allow delete: if isAdmin();
+    }
+
+    // Testimonials (Public Read, Admin Write)
+    match /testimonials/{testimonialId} {
+      allow read: if true;
+      allow create: if isAdmin() && isValidTestimonial(request.resource.data);
+      allow update: if isAdmin() && isValidTestimonial(request.resource.data);
+      allow delete: if isAdmin();
+    }
+
+    // FAQs (Public Read, Admin Write)
+    match /faqs/{faqId} {
+      allow read: if true;
+      allow create: if isAdmin() && isValidFAQ(request.resource.data);
+      allow update: if isAdmin() && isValidFAQ(request.resource.data);
+      allow delete: if isAdmin();
+    }
+
+    // Inquiries (Public Create, Admin Read/Update/Delete)
+    match /inquiries/{inquiryId} {
+      allow create: if isValidInquiry(request.resource.data) && request.resource.data.status == 'new';
+      allow read: if isAdmin();
+      allow update: if isAdmin() && isValidInquiry(request.resource.data);
+      allow delete: if isAdmin();
+    }
+  }
+}
