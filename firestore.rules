@@ -82,6 +82,26 @@ service cloud.firestore {
              (!('order' in data) || data.order is number);
     }
 
+    function isValidProject(data) {
+      return hasOnlyAllowedFields(['customerId', 'title', 'description', 'progress', 'status', 'createdAt', 'updatedAt']) &&
+             data.customerId is string && data.customerId.size() > 0 && data.customerId.size() <= 100 &&
+             data.title is string && data.title.size() > 0 && data.title.size() <= 200 &&
+             (!('description' in data) || (data.description is string && data.description.size() <= 5000)) &&
+             data.progress is number && data.progress >= 0 && data.progress <= 100 &&
+             data.status in ['Not Started', 'In Progress', 'In Review', 'Completed'] &&
+             data.createdAt is string &&
+             data.updatedAt is string;
+    }
+
+    function isValidProjectFile(data) {
+      return hasOnlyAllowedFields(['projectId', 'fileName', 'fileType', 'fileData', 'uploadedAt']) &&
+             data.projectId is string && data.projectId.size() > 0 && data.projectId.size() <= 100 &&
+             data.fileName is string && data.fileName.size() > 0 && data.fileName.size() <= 200 &&
+             data.fileType is string && data.fileType.size() > 0 && data.fileType.size() <= 100 &&
+             data.fileData is string && data.fileData.size() > 0 && data.fileData.size() <= 1048576 &&
+             data.uploadedAt is string;
+    }
+
     // ===============================================================
     // Rules
     // ===============================================================
@@ -122,6 +142,22 @@ service cloud.firestore {
       allow create: if isValidInquiry(request.resource.data) && request.resource.data.status == 'new';
       allow read: if isAdmin();
       allow update: if isAdmin() && isValidInquiry(request.resource.data);
+      allow delete: if isAdmin();
+    }
+
+    // Projects (Public Read, Admin Write)
+    match /projects/{projectId} {
+      allow read: if true;
+      allow create: if isAdmin() && isValidProject(request.resource.data);
+      allow update: if isAdmin() && isValidProject(request.resource.data);
+      allow delete: if isAdmin();
+    }
+
+    // Project Files (Public Read, Admin Write)
+    match /project_files/{fileId} {
+      allow read: if true;
+      allow create: if isAdmin() && isValidProjectFile(request.resource.data);
+      allow update: if isAdmin() && isValidProjectFile(request.resource.data);
       allow delete: if isAdmin();
     }
   }

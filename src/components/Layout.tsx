@@ -35,6 +35,7 @@ export default function Layout() {
   const navLinks = [
     { name: "Home", path: "/" },
     { name: "Services", path: "/services" },
+    { name: "Client Portal", path: "/portal" },
     { name: "Contact", path: "/contact" },
   ];
 
