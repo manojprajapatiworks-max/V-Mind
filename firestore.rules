@@ -12,152 +12,172 @@ service cloud.firestore {
     }
     
     function isAdmin() {
-      // Allow the initial user to be admin, or check custom claims if implemented
       return isAuthenticated() && (
         request.auth.token.email == "manojprajapatiworks@gmail.com" && request.auth.token.email_verified == true
       );
     }
     
-    function hasRequiredFields(fields) {
-      return request.resource.data.keys().hasAll(fields);
-    }
-    
     function hasOnlyAllowedFields(fields) {
       return request.resource.data.keys().hasOnly(fields);
-    }
-    
-    function validStringLength(field, minLen, maxLen) {
-      return request.resource.data[field] is string &&
-        request.resource.data[field].size() >= minLen &&
-        request.resource.data[field].size() <= maxLen;
     }
 
     // ===============================================================
     // Domain Validators
     // ===============================================================
     
-    function isValidSiteSettings(data) {
-      return hasOnlyAllowedFields(['heroTitle', 'heroSubtitle', 'phoneNumber', 'lineId', 'email', 'address', 'aboutText']) &&
-             data.heroTitle is string && data.heroTitle.size() > 0 && data.heroTitle.size() <= 200 &&
-             data.heroSubtitle is string && data.heroSubtitle.size() > 0 && data.heroSubtitle.size() <= 500 &&
-             data.phoneNumber is string && data.phoneNumber.size() > 0 && data.phoneNumber.size() <= 50 &&
-             data.lineId is string && data.lineId.size() > 0 && data.lineId.size() <= 100 &&
-             data.email is string && data.email.size() > 0 && data.email.size() <= 100 &&
+    function isValidGlobalSettings(data) {
+      return hasOnlyAllowedFields(['companyName', 'logoUrl', 'phoneNumber', 'lineId', 'email', 'address', 'aboutText']) &&
+             (!('companyName' in data) || (data.companyName is string && data.companyName.size() <= 200)) &&
+             (!('logoUrl' in data) || (data.logoUrl is string && data.logoUrl.size() <= 500)) &&
+             (!('phoneNumber' in data) || (data.phoneNumber is string && data.phoneNumber.size() <= 50)) &&
+             (!('lineId' in data) || (data.lineId is string && data.lineId.size() <= 100)) &&
+             (!('email' in data) || (data.email is string && data.email.size() <= 100)) &&
              (!('address' in data) || (data.address is string && data.address.size() <= 500)) &&
              (!('aboutText' in data) || (data.aboutText is string && data.aboutText.size() <= 5000));
     }
+
+    function isValidHeroSettings(data) {
+      return hasOnlyAllowedFields(['title_en', 'title_th', 'subtitle_en', 'subtitle_th']) &&
+             (!('title_en' in data) || (data.title_en is string && data.title_en.size() <= 200)) &&
+             (!('title_th' in data) || (data.title_th is string && data.title_th.size() <= 200)) &&
+             (!('subtitle_en' in data) || (data.subtitle_en is string && data.subtitle_en.size() <= 500)) &&
+             (!('subtitle_th' in data) || (data.subtitle_th is string && data.subtitle_th.size() <= 500));
+    }
     
     function isValidService(data) {
-      return hasOnlyAllowedFields(['title', 'description', 'category', 'iconName', 'order']) &&
-             data.title is string && data.title.size() > 0 && data.title.size() <= 100 &&
-             data.description is string && data.description.size() > 0 && data.description.size() <= 2000 &&
-             data.category is string && data.category.size() > 0 && data.category.size() <= 50 &&
-             data.iconName is string && data.iconName.size() > 0 && data.iconName.size() <= 50 &&
+      return hasOnlyAllowedFields(['title_en', 'title_th', 'description_en', 'description_th', 'category_en', 'category_th', 'iconName', 'order']) &&
+             (!('title_en' in data) || (data.title_en is string && data.title_en.size() <= 200)) &&
+             (!('title_th' in data) || (data.title_th is string && data.title_th.size() <= 200)) &&
+             (!('description_en' in data) || (data.description_en is string && data.description_en.size() <= 2000)) &&
+             (!('description_th' in data) || (data.description_th is string && data.description_th.size() <= 2000)) &&
+             (!('iconName' in data) || (data.iconName is string && data.iconName.size() <= 100)) &&
+             (!('order' in data) || data.order is number);
+    }
+
+    function isValidGalleryItem(data) {
+      return hasOnlyAllowedFields(['title_en', 'title_th', 'imageUrl', 'category', 'order']) &&
+             (!('title_en' in data) || (data.title_en is string && data.title_en.size() <= 200)) &&
+             (!('title_th' in data) || (data.title_th is string && data.title_th.size() <= 200)) &&
+             (!('imageUrl' in data) || (data.imageUrl is string && data.imageUrl.size() <= 500)) &&
+             (!('order' in data) || data.order is number);
+    }
+
+    function isValidWhyUsFeature(data) {
+      return hasOnlyAllowedFields(['title_en', 'title_th', 'description_en', 'description_th', 'iconName', 'order']) &&
+             (!('title_en' in data) || (data.title_en is string && data.title_en.size() <= 200)) &&
+             (!('title_th' in data) || (data.title_th is string && data.title_th.size() <= 200)) &&
+             (!('description_en' in data) || (data.description_en is string && data.description_en.size() <= 1000)) &&
+             (!('description_th' in data) || (data.description_th is string && data.description_th.size() <= 1000)) &&
              (!('order' in data) || data.order is number);
     }
     
     function isValidInquiry(data) {
       return hasOnlyAllowedFields(['name', 'email', 'phone', 'message', 'status', 'createdAt']) &&
              data.name is string && data.name.size() > 0 && data.name.size() <= 100 &&
-             (!('email' in data) || (data.email is string && data.email.size() <= 100)) &&
-             (!('phone' in data) || (data.phone is string && data.phone.size() <= 50)) &&
              data.message is string && data.message.size() > 0 && data.message.size() <= 5000 &&
              data.status in ['new', 'read', 'resolved'] &&
              data.createdAt is string;
     }
 
-    function isValidTestimonial(data) {
-      return hasOnlyAllowedFields(['author', 'role', 'content', 'rating', 'order']) &&
-             data.author is string && data.author.size() > 0 && data.author.size() <= 100 &&
-             (!('role' in data) || (data.role is string && data.role.size() <= 100)) &&
-             data.content is string && data.content.size() > 0 && data.content.size() <= 1000 &&
-             data.rating is number && data.rating >= 1 && data.rating <= 5 &&
+    function isValidFAQ(data) {
+      return hasOnlyAllowedFields(['question_en', 'question_th', 'answer_en', 'answer_th', 'order']) &&
+             (!('question_en' in data) || (data.question_en is string && data.question_en.size() <= 500)) &&
+             (!('question_th' in data) || (data.question_th is string && data.question_th.size() <= 500)) &&
+             (!('answer_en' in data) || (data.answer_en is string && data.answer_en.size() <= 2000)) &&
+             (!('answer_th' in data) || (data.answer_th is string && data.answer_th.size() <= 2000)) &&
              (!('order' in data) || data.order is number);
     }
 
-    function isValidFAQ(data) {
-      return hasOnlyAllowedFields(['question', 'answer', 'order']) &&
-             data.question is string && data.question.size() > 0 && data.question.size() <= 500 &&
-             data.answer is string && data.answer.size() > 0 && data.answer.size() <= 2000 &&
+    function isValidTestimonial(data) {
+      return hasOnlyAllowedFields(['author', 'role', 'content', 'rating', 'order']) &&
+             (!('author' in data) || (data.author is string && data.author.size() <= 100)) &&
+             (!('content' in data) || (data.content is string && data.content.size() <= 1000)) &&
+             (!('rating' in data) || data.rating is number) &&
              (!('order' in data) || data.order is number);
     }
 
     function isValidProject(data) {
-      return hasOnlyAllowedFields(['customerId', 'title', 'description', 'progress', 'status', 'createdAt', 'updatedAt']) &&
-             data.customerId is string && data.customerId.size() > 0 && data.customerId.size() <= 100 &&
-             data.title is string && data.title.size() > 0 && data.title.size() <= 200 &&
-             (!('description' in data) || (data.description is string && data.description.size() <= 5000)) &&
+      return hasOnlyAllowedFields(['customerId', 'title', 'description', 'progress', 'status', 'paymentStatus', 'projectUrl', 'createdAt', 'updatedAt']) &&
+             data.customerId is string && data.customerId.size() > 0 &&
+             data.title is string && data.title.size() > 0 &&
              data.progress is number && data.progress >= 0 && data.progress <= 100 &&
-             data.status in ['Not Started', 'In Progress', 'In Review', 'Completed'] &&
              data.createdAt is string &&
              data.updatedAt is string;
     }
 
     function isValidProjectFile(data) {
       return hasOnlyAllowedFields(['projectId', 'fileName', 'fileType', 'fileData', 'uploadedAt']) &&
-             data.projectId is string && data.projectId.size() > 0 && data.projectId.size() <= 100 &&
-             data.fileName is string && data.fileName.size() > 0 && data.fileName.size() <= 200 &&
-             data.fileType is string && data.fileType.size() > 0 && data.fileType.size() <= 100 &&
-             data.fileData is string && data.fileData.size() > 0 && data.fileData.size() <= 1048576 &&
-             data.uploadedAt is string;
+             data.projectId is string && data.projectId.size() > 0 &&
+             data.fileName is string && data.fileName.size() > 0 &&
+             data.fileData is string && data.fileData.size() > 0 && data.fileData.size() <= 1048576;
     }
 
     // ===============================================================
     // Rules
     // ===============================================================
 
-    // Site Settings (Public Read, Admin Write)
-    match /settings/global {
+    // Settings (Public Read, Admin Write)
+    match /settings/{settingId} {
       allow read: if true;
-      allow create, update: if isAdmin() && isValidSiteSettings(request.resource.data);
-      allow delete: if false; // Settings should not be deleted, only updated
+      allow create, update: if isAdmin() && (
+        (settingId == 'global' && isValidGlobalSettings(request.resource.data)) ||
+        (settingId == 'hero' && isValidHeroSettings(request.resource.data))
+      );
+      allow delete: if false;
     }
 
     // Services (Public Read, Admin Write)
     match /services/{serviceId} {
       allow read: if true;
-      allow create: if isAdmin() && isValidService(request.resource.data);
-      allow update: if isAdmin() && isValidService(request.resource.data);
+      allow create, update: if isAdmin() && isValidService(request.resource.data);
       allow delete: if isAdmin();
     }
 
-    // Testimonials (Public Read, Admin Write)
-    match /testimonials/{testimonialId} {
+    // Gallery (Public Read, Admin Write)
+    match /gallery/{itemId} {
       allow read: if true;
-      allow create: if isAdmin() && isValidTestimonial(request.resource.data);
-      allow update: if isAdmin() && isValidTestimonial(request.resource.data);
+      allow create, update: if isAdmin() && isValidGalleryItem(request.resource.data);
+      allow delete: if isAdmin();
+    }
+
+    // Why Us (Public Read, Admin Write)
+    match /why_us/{featureId} {
+      allow read: if true;
+      allow create, update: if isAdmin() && isValidWhyUsFeature(request.resource.data);
       allow delete: if isAdmin();
     }
 
     // FAQs (Public Read, Admin Write)
     match /faqs/{faqId} {
       allow read: if true;
-      allow create: if isAdmin() && isValidFAQ(request.resource.data);
-      allow update: if isAdmin() && isValidFAQ(request.resource.data);
+      allow create, update: if isAdmin() && isValidFAQ(request.resource.data);
+      allow delete: if isAdmin();
+    }
+
+    // Testimonials (Public Read, Admin Write)
+    match /testimonials/{testimonialId} {
+      allow read: if true;
+      allow create, update: if isAdmin() && isValidTestimonial(request.resource.data);
       allow delete: if isAdmin();
     }
 
     // Inquiries (Public Create, Admin Read/Update/Delete)
     match /inquiries/{inquiryId} {
       allow create: if isValidInquiry(request.resource.data) && request.resource.data.status == 'new';
-      allow read: if isAdmin();
-      allow update: if isAdmin() && isValidInquiry(request.resource.data);
-      allow delete: if isAdmin();
+      allow read, update, delete: if isAdmin();
     }
 
     // Projects (Public Read, Admin Write)
     match /projects/{projectId} {
       allow read: if true;
-      allow create: if isAdmin() && isValidProject(request.resource.data);
-      allow update: if isAdmin() && isValidProject(request.resource.data);
+      allow create, update: if isAdmin() && isValidProject(request.resource.data);
       allow delete: if isAdmin();
     }
 
     // Project Files (Public Read, Admin Write)
     match /project_files/{fileId} {
       allow read: if true;
-      allow create: if isAdmin() && isValidProjectFile(request.resource.data);
-      allow update: if isAdmin() && isValidProjectFile(request.resource.data);
+      allow create, update: if isAdmin() && isValidProjectFile(request.resource.data);
       allow delete: if isAdmin();
     }
   }

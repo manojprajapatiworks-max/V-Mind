@@ -1,92 +1,146 @@
 {
   "entities": {
-    "SiteSettings": {
-      "title": "Site Settings",
-      "description": "Global settings and content for the website",
+    "GlobalSettings": {
+      "title": "Global Settings",
+      "description": "General site configuration",
       "type": "object",
       "properties": {
-        "heroTitle": { "type": "string", "description": "Main heading on the home page" },
-        "heroSubtitle": { "type": "string", "description": "Subheading on the home page" },
-        "phoneNumber": { "type": "string", "description": "Contact phone number" },
-        "lineId": { "type": "string", "description": "LINE App ID or URL" },
-        "email": { "type": "string", "description": "Contact email address" },
-        "address": { "type": "string", "description": "Physical address" },
-        "aboutText": { "type": "string", "description": "About us description" }
-      },
-      "required": ["heroTitle", "heroSubtitle", "phoneNumber", "lineId", "email"]
+        "companyName": { "type": "string" },
+        "logoUrl": { "type": "string" },
+        "phoneNumber": { "type": "string" },
+        "lineId": { "type": "string" },
+        "email": { "type": "string" },
+        "address": { "type": "string" },
+        "aboutText": { "type": "string" }
+      }
+    },
+    "HeroSettings": {
+      "title": "Hero Settings",
+      "description": "Content for the home page hero section",
+      "type": "object",
+      "properties": {
+        "title_en": { "type": "string" },
+        "title_th": { "type": "string" },
+        "subtitle_en": { "type": "string" },
+        "subtitle_th": { "type": "string" }
+      }
     },
     "Service": {
       "title": "Service",
       "description": "A service offered by the company",
       "type": "object",
       "properties": {
-        "title": { "type": "string", "description": "Name of the service" },
-        "description": { "type": "string", "description": "Detailed description of the service" },
-        "category": { "type": "string", "description": "Category (e.g., Electrical, Security, Networking)" },
-        "iconName": { "type": "string", "description": "Lucide icon name" },
-        "order": { "type": "number", "description": "Display order" }
-      },
-      "required": ["title", "description", "category", "iconName"]
+        "title_en": { "type": "string" },
+        "title_th": { "type": "string" },
+        "description_en": { "type": "string" },
+        "description_th": { "type": "string" },
+        "category_en": { "type": "string" },
+        "category_th": { "type": "string" },
+        "iconName": { "type": "string" },
+        "order": { "type": "number" }
+      }
     },
-    "Inquiry": {
-      "title": "Inquiry",
-      "description": "Customer contact request",
+    "GalleryItem": {
+      "title": "Gallery Item",
+      "description": "An item in the project gallery",
       "type": "object",
       "properties": {
-        "name": { "type": "string", "description": "Customer name" },
-        "email": { "type": "string", "description": "Customer email" },
-        "phone": { "type": "string", "description": "Customer phone" },
-        "message": { "type": "string", "description": "Inquiry message" },
-        "status": { "type": "string", "enum": ["new", "read", "resolved"], "description": "Status of the inquiry" },
-        "createdAt": { "type": "string", "format": "date-time", "description": "Creation timestamp" }
-      },
-      "required": ["name", "message", "status", "createdAt"]
+        "title_en": { "type": "string" },
+        "title_th": { "type": "string" },
+        "imageUrl": { "type": "string" },
+        "category": { "type": "string" },
+        "order": { "type": "number" }
+      }
     },
-    "Testimonial": {
-      "title": "Testimonial",
-      "description": "Customer review or testimonial",
+    "WhyUsFeature": {
+      "title": "Why Us Feature",
+      "description": "A feature explaining why to choose the company",
       "type": "object",
       "properties": {
-        "author": { "type": "string", "description": "Name of the customer" },
-        "role": { "type": "string", "description": "Role or company of the customer" },
-        "content": { "type": "string", "description": "Testimonial text" },
-        "rating": { "type": "number", "description": "Rating out of 5" },
-        "order": { "type": "number", "description": "Display order" }
-      },
-      "required": ["author", "content", "rating"]
+        "title_en": { "type": "string" },
+        "title_th": { "type": "string" },
+        "description_en": { "type": "string" },
+        "description_th": { "type": "string" },
+        "iconName": { "type": "string" },
+        "order": { "type": "number" }
+      }
     },
     "FAQ": {
       "title": "FAQ",
       "description": "Frequently Asked Question",
       "type": "object",
       "properties": {
-        "question": { "type": "string", "description": "The question" },
-        "answer": { "type": "string", "description": "The answer" },
-        "order": { "type": "number", "description": "Display order" }
-      },
-      "required": ["question", "answer"]
+        "question_en": { "type": "string" },
+        "question_th": { "type": "string" },
+        "answer_en": { "type": "string" },
+        "answer_th": { "type": "string" },
+        "order": { "type": "number" }
+      }
+    },
+    "Testimonial": {
+      "title": "Testimonial",
+      "description": "Customer review or testimonial",
+      "type": "object",
+      "properties": {
+        "author": { "type": "string" },
+        "role": { "type": "string" },
+        "content": { "type": "string" },
+        "rating": { "type": "number" },
+        "order": { "type": "number" }
+      }
+    },
+    "Inquiry": {
+      "title": "Inquiry",
+      "description": "Customer contact request",
+      "type": "object",
+      "properties": {
+        "name": { "type": "string" },
+        "email": { "type": "string" },
+        "phone": { "type": "string" },
+        "message": { "type": "string" },
+        "status": { "type": "string", "enum": ["new", "read", "resolved"] },
+        "createdAt": { "type": "string" }
+      }
+    },
+    "Project": {
+      "title": "Project",
+      "description": "A client project",
+      "type": "object",
+      "properties": {
+        "customerId": { "type": "string" },
+        "title": { "type": "string" },
+        "description": { "type": "string" },
+        "progress": { "type": "number" },
+        "status": { "type": "string" },
+        "paymentStatus": { "type": "string" },
+        "projectUrl": { "type": "string" },
+        "createdAt": { "type": "string" },
+        "updatedAt": { "type": "string" }
+      }
+    },
+    "ProjectFile": {
+      "title": "Project File",
+      "description": "A file associated with a project",
+      "type": "object",
+      "properties": {
+        "projectId": { "type": "string" },
+        "fileName": { "type": "string" },
+        "fileType": { "type": "string" },
+        "fileData": { "type": "string" },
+        "uploadedAt": { "type": "string" }
+      }
     }
   },
   "firestore": {
-    "/settings/global": {
-      "schema": { "$ref": "#/entities/SiteSettings" },
-      "description": "Singleton document for global site settings"
-    },
-    "/services/{serviceId}": {
-      "schema": { "$ref": "#/entities/Service" },
-      "description": "Collection of services"
-    },
-    "/inquiries/{inquiryId}": {
-      "schema": { "$ref": "#/entities/Inquiry" },
-      "description": "Collection of customer inquiries"
-    },
-    "/testimonials/{testimonialId}": {
-      "schema": { "$ref": "#/entities/Testimonial" },
-      "description": "Collection of customer testimonials"
-    },
-    "/faqs/{faqId}": {
-      "schema": { "$ref": "#/entities/FAQ" },
-      "description": "Collection of frequently asked questions"
-    }
+    "/settings/global": { "schema": { "$ref": "#/entities/GlobalSettings" }, "description": "Global site settings" },
+    "/settings/hero": { "schema": { "$ref": "#/entities/HeroSettings" }, "description": "Hero section content" },
+    "/services/{serviceId}": { "schema": { "$ref": "#/entities/Service" }, "description": "List of services" },
+    "/gallery/{itemId}": { "schema": { "$ref": "#/entities/GalleryItem" }, "description": "Project gallery items" },
+    "/why_us/{featureId}": { "schema": { "$ref": "#/entities/WhyUsFeature" }, "description": "Why choose us features" },
+    "/faqs/{faqId}": { "schema": { "$ref": "#/entities/FAQ" }, "description": "Frequently asked questions" },
+    "/testimonials/{testimonialId}": { "schema": { "$ref": "#/entities/Testimonial" }, "description": "Customer testimonials" },
+    "/inquiries/{inquiryId}": { "schema": { "$ref": "#/entities/Inquiry" }, "description": "Customer inquiries" },
+    "/projects/{projectId}": { "schema": { "$ref": "#/entities/Project" }, "description": "Client projects" },
+    "/project_files/{fileId}": { "schema": { "$ref": "#/entities/ProjectFile" }, "description": "Files for client projects" }
   }
 }
