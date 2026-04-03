@@ -1,17 +1,19 @@
 import { Link, Outlet, useLocation } from "react-router-dom";
 import { motion, AnimatePresence } from "framer-motion";
-import { Zap, Menu, X, Phone, Mail, MapPin, ArrowRight } from "lucide-react";
+import { Zap, Menu, X, Phone, Mail, MapPin, ArrowRight, Globe } from "lucide-react";
 import { useState, useEffect } from "react";
 import { doc, onSnapshot } from "firebase/firestore";
 import { db } from "../firebase";
 import { handleFirestoreError, OperationType } from "../lib/firestore-error";
 import { Toaster } from "sonner";
+import { useLanguage } from "../contexts/LanguageContext";
 
 export default function Layout() {
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const [scrolled, setScrolled] = useState(false);
   const location = useLocation();
   const [settings, setSettings] = useState<any>({});
+  const { language, setLanguage } = useLanguage();
 
   useEffect(() => {
     const handleScroll = () => {
@@ -33,10 +35,10 @@ export default function Layout() {
   }, []);
 
   const navLinks = [
-    { name: "Home", path: "/" },
-    { name: "Services", path: "/services" },
-    { name: "Client Portal", path: "/portal" },
-    { name: "Contact", path: "/contact" },
+    { name: language === "en" ? "Home" : "หน้าแรก", path: "/" },
+    { name: language === "en" ? "Services" : "บริการของเรา", path: "/services" },
+    { name: language === "en" ? "Client Portal" : "พอร์ทัลลูกค้า", path: "/portal" },
+    { name: language === "en" ? "Contact" : "ติดต่อเรา", path: "/contact" },
   ];
 
   return (
@@ -59,6 +61,21 @@ export default function Layout() {
             )}
           </div>
           <div className="flex items-center gap-4">
+            <div className="flex items-center gap-2 border-r border-white/10 pr-4 mr-2">
+              <button 
+                onClick={() => setLanguage("en")} 
+                className={`hover:text-white transition-colors ${language === "en" ? "text-cyan-400 font-bold" : ""}`}
+              >
+                EN
+              </button>
+              <span className="text-white/20">|</span>
+              <button 
+                onClick={() => setLanguage("th")} 
+                className={`hover:text-white transition-colors ${language === "th" ? "text-cyan-400 font-bold" : ""}`}
+              >
+                TH
+              </button>
+            </div>
             <Link to="/admin" className="hover:text-cyan-400 transition-colors">Admin Portal</Link>
           </div>
         </div>
@@ -70,11 +87,15 @@ export default function Layout() {
           <div className="flex justify-between items-center">
             {/* Logo */}
             <Link to="/" className="flex items-center gap-3 group">
-              <div className="bg-gradient-to-br from-blue-600 to-cyan-500 text-white p-2.5 rounded-xl shadow-lg shadow-cyan-500/20 group-hover:shadow-cyan-500/40 transition-all">
-                <Zap size={24} className="fill-current" />
-              </div>
+              {settings.logoUrl ? (
+                <img src={settings.logoUrl} alt="Logo" className="h-10 w-auto object-contain" referrerPolicy="no-referrer" />
+              ) : (
+                <div className="bg-gradient-to-br from-blue-600 to-cyan-500 text-white p-2.5 rounded-xl shadow-lg shadow-cyan-500/20 group-hover:shadow-cyan-500/40 transition-all">
+                  <Zap size={24} className="fill-current" />
+                </div>
+              )}
               <span className="text-2xl font-display font-bold text-slate-900 tracking-tight">
-                V Mind
+                {settings.companyName || "V Mind"}
               </span>
             </Link>
 
@@ -101,17 +122,24 @@ export default function Layout() {
                 to="/contact"
                 className="bg-slate-900 text-white px-6 py-2.5 rounded-full text-sm font-semibold hover:bg-blue-600 transition-all shadow-md hover:shadow-xl hover:shadow-blue-600/20 flex items-center gap-2"
               >
-                Get a Quote <ArrowRight size={16} />
+                {language === "en" ? "Get a Quote" : "ขอใบเสนอราคา"} <ArrowRight size={16} />
               </Link>
             </nav>
 
             {/* Mobile Menu Button */}
-            <button
-              className="md:hidden p-2 text-slate-600 hover:text-blue-600 transition-colors"
-              onClick={() => setIsMenuOpen(!isMenuOpen)}
-            >
-              {isMenuOpen ? <X size={24} /> : <Menu size={24} />}
-            </button>
+            <div className="flex items-center gap-4">
+              <div className="md:hidden flex items-center gap-2 text-xs font-bold text-slate-600">
+                <button onClick={() => setLanguage("en")} className={language === "en" ? "text-blue-600" : ""}>EN</button>
+                <span>|</span>
+                <button onClick={() => setLanguage("th")} className={language === "th" ? "text-blue-600" : ""}>TH</button>
+              </div>
+              <button
+                className="md:hidden p-2 text-slate-600 hover:text-blue-600 transition-colors"
+                onClick={() => setIsMenuOpen(!isMenuOpen)}
+              >
+                {isMenuOpen ? <X size={24} /> : <Menu size={24} />}
+              </button>
+            </div>
           </div>
         </div>
 
@@ -145,7 +173,7 @@ export default function Layout() {
                     onClick={() => setIsMenuOpen(false)}
                     className="flex items-center justify-center gap-2 w-full bg-blue-600 text-white px-5 py-3.5 rounded-xl text-base font-semibold hover:bg-blue-700 transition shadow-lg shadow-blue-600/20"
                   >
-                    Get a Quote <ArrowRight size={18} />
+                    {language === "en" ? "Get a Quote" : "ขอใบเสนอราคา"} <ArrowRight size={18} />
                   </Link>
                 </div>
               </div>

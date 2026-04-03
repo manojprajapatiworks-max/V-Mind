@@ -4,12 +4,14 @@ import { db } from "../firebase";
 import { motion } from "framer-motion";
 import { Zap, ShieldCheck, Network, Cable, Server, Phone, Video, AlertTriangle } from "lucide-react";
 import { handleFirestoreError, OperationType } from "../lib/firestore-error";
+import { useLanguage } from "../contexts/LanguageContext";
 
 const iconMap: Record<string, any> = {
   Zap, ShieldCheck, Network, Cable, Server, Phone, Video, AlertTriangle
 };
 
 export default function Services() {
+  const { language, t } = useLanguage();
   const [services, setServices] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
 
@@ -25,7 +27,7 @@ export default function Services() {
     return () => unsub();
   }, []);
 
-  const categories = Array.from(new Set(services.map(s => s.category)));
+  const categories = Array.from(new Set(services.map(s => language === 'en' ? (s.category_en || s.category) : (s.category_th || s.category_en || s.category))));
 
   return (
     <div className="min-h-screen bg-slate-50 pt-32 pb-24">
@@ -39,10 +41,10 @@ export default function Services() {
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.5 }}
           >
-            <h2 className="text-sm font-bold text-blue-600 uppercase tracking-widest mb-3">What We Do</h2>
-            <h1 className="text-5xl md:text-6xl font-display font-bold text-slate-900 tracking-tight mb-6">Our Services</h1>
+            <h2 className="text-sm font-bold text-blue-600 uppercase tracking-widest mb-3">{t('services.subtitle')}</h2>
+            <h1 className="text-5xl md:text-6xl font-display font-bold text-slate-900 tracking-tight mb-6">{t('services.title')}</h1>
             <p className="text-xl text-slate-600 max-w-3xl mx-auto font-light leading-relaxed">
-              Comprehensive, professional solutions for electrical, security, and networking infrastructure. We deliver quality and reliability in every project.
+              {t('services.description')}
             </p>
           </motion.div>
         </div>
@@ -71,7 +73,7 @@ export default function Services() {
                 </div>
                 
                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
-                  {services.filter(s => s.category === category).map((service, idx) => {
+                  {services.filter(s => (language === 'en' ? (s.category_en || s.category) : (s.category_th || s.category_en || s.category)) === category).map((service, idx) => {
                     const Icon = iconMap[service.iconName] || Zap;
                     // Alternating colors for cards based on index
                     const colorClasses = [
@@ -94,8 +96,12 @@ export default function Services() {
                           <div className="w-16 h-16 bg-white rounded-2xl flex items-center justify-center mb-6 shadow-sm border border-white/50 group-hover:shadow-md transition-all">
                             <Icon size={32} strokeWidth={1.5} />
                           </div>
-                          <h3 className="text-2xl font-display font-bold text-slate-900 mb-4">{service.title}</h3>
-                          <p className="text-slate-600 leading-relaxed text-lg">{service.description}</p>
+                          <h3 className="text-2xl font-display font-bold text-slate-900 mb-4">
+                            {language === 'en' ? (service.title_en || service.title) : (service.title_th || service.title_en || service.title)}
+                          </h3>
+                          <p className="text-slate-600 leading-relaxed text-lg">
+                            {language === 'en' ? (service.description_en || service.description) : (service.description_th || service.description_en || service.description)}
+                          </p>
                         </div>
                       </motion.div>
                     );

@@ -1,14 +1,23 @@
 import { motion } from "framer-motion";
-import { ArrowRight, ShieldCheck, Zap, Network, PhoneCall, MessageCircle, Star, ChevronDown, ChevronUp } from "lucide-react";
+import { ArrowRight, ShieldCheck, Zap, Network, PhoneCall, MessageCircle, Star, ChevronDown, ChevronUp, BarChart3, Info, Globe } from "lucide-react";
 import { Link } from "react-router-dom";
 import { useEffect, useState } from "react";
 import { collection, doc, onSnapshot, query, orderBy, limit } from "firebase/firestore";
 import { db } from "../firebase";
 import { handleFirestoreError, OperationType } from "../lib/firestore-error";
+import { useLanguage } from "../contexts/LanguageContext";
+
+const iconMap: Record<string, any> = {
+  Zap, ShieldCheck, Network, PhoneCall, MessageCircle, Star, ChevronDown, ChevronUp, BarChart3, Info, Globe, Shield: ShieldCheck, Flash: Zap
+};
 
 export default function Home() {
+  const { language, t } = useLanguage();
   const [settings, setSettings] = useState<any>({});
+  const [hero, setHero] = useState<any>({});
   const [services, setServices] = useState<any[]>([]);
+  const [gallery, setGallery] = useState<any[]>([]);
+  const [whyUs, setWhyUs] = useState<any[]>([]);
   const [testimonials, setTestimonials] = useState<any[]>([]);
   const [faqs, setFaqs] = useState<any[]>([]);
   const [openFaq, setOpenFaq] = useState<string | null>(null);
@@ -18,10 +27,24 @@ export default function Home() {
       if (doc.exists()) setSettings(doc.data());
     }, (error) => handleFirestoreError(error, OperationType.GET, "settings/global"));
 
+    const unsubHero = onSnapshot(doc(db, "settings", "hero"), (doc) => {
+      if (doc.exists()) setHero(doc.data());
+    }, (error) => handleFirestoreError(error, OperationType.GET, "settings/hero"));
+
     const qServices = query(collection(db, "services"), orderBy("order", "asc"), limit(6));
     const unsubServices = onSnapshot(qServices, (snapshot) => {
       setServices(snapshot.docs.map(d => ({ id: d.id, ...d.data() })));
     }, (error) => handleFirestoreError(error, OperationType.LIST, "services"));
+
+    const qGallery = query(collection(db, "gallery"), orderBy("order", "asc"), limit(6));
+    const unsubGallery = onSnapshot(qGallery, (snapshot) => {
+      setGallery(snapshot.docs.map(d => ({ id: d.id, ...d.data() })));
+    }, (error) => handleFirestoreError(error, OperationType.LIST, "gallery"));
+
+    const qWhyUs = query(collection(db, "why_us"), orderBy("order", "asc"));
+    const unsubWhyUs = onSnapshot(qWhyUs, (snapshot) => {
+      setWhyUs(snapshot.docs.map(d => ({ id: d.id, ...d.data() })));
+    }, (error) => handleFirestoreError(error, OperationType.LIST, "why_us"));
 
     const qTestimonials = query(collection(db, "testimonials"), orderBy("order", "asc"), limit(3));
     const unsubTestimonials = onSnapshot(qTestimonials, (snapshot) => {
@@ -35,14 +58,22 @@ export default function Home() {
 
     return () => {
       unsubSettings();
+      unsubHero();
       unsubServices();
+      unsubGallery();
+      unsubWhyUs();
       unsubTestimonials();
       unsubFaqs();
     };
   }, []);
 
-  const defaultHeroTitle = "Empowering Your Infrastructure";
-  const defaultHeroSubtitle = "Professional solutions for electrical cables, panels, fire alarms, CCTV, LAN, fiber optics, and telephone systems.";
+  const defaultHeroTitle = language === 'en' ? "Empowering Your Infrastructure" : "เสริมสร้างโครงสร้างพื้นฐานของคุณ";
+  const defaultHeroSubtitle = language === 'en' 
+    ? "Professional solutions for electrical cables, panels, fire alarms, CCTV, LAN, fiber optics, and telephone systems."
+    : "โซลูชันระดับมืออาชีพสำหรับสายไฟฟ้า แผงควบคุม สัญญาณเตือนไฟไหม้ CCTV LAN ไฟเบอร์ออปติก และระบบโทรศัพท์";
+
+  const heroTitle = language === 'en' ? (hero.title_en || settings.heroTitle || defaultHeroTitle) : (hero.title_th || defaultHeroTitle);
+  const heroSubtitle = language === 'en' ? (hero.subtitle_en || settings.heroSubtitle || defaultHeroSubtitle) : (hero.subtitle_th || defaultHeroSubtitle);
 
   return (
     <div className="flex flex-col min-h-screen">
@@ -68,11 +99,11 @@ export default function Home() {
             </div>
             
             <h1 className="text-5xl md:text-7xl lg:text-8xl font-display font-bold tracking-tight mb-8 leading-[1.1]">
-              <span className="text-white">{settings.heroTitle || defaultHeroTitle}</span>
+              <span className="text-white">{heroTitle}</span>
             </h1>
             
             <p className="text-lg md:text-2xl text-slate-400 mb-12 max-w-3xl mx-auto leading-relaxed font-light">
-              {settings.heroSubtitle || defaultHeroSubtitle}
+              {heroSubtitle}
             </p>
             
             <div className="flex flex-col sm:flex-row gap-5 justify-center items-center">
@@ -127,65 +158,126 @@ export default function Home() {
         </div>
       </section>
 
-      {/* Bento Grid Features */}
+      {/* Bento Grid Features (Services) */}
       <section className="py-24 bg-slate-50">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="text-center mb-16">
-            <h2 className="text-sm font-bold text-blue-600 uppercase tracking-widest mb-2">Our Expertise</h2>
-            <h3 className="text-4xl md:text-5xl font-display font-bold text-slate-900">Systematic & Professional</h3>
+            <h2 className="text-sm font-bold text-blue-600 uppercase tracking-widest mb-2">{t('services.subtitle')}</h2>
+            <h3 className="text-4xl md:text-5xl font-display font-bold text-slate-900">{t('services.title')}</h3>
           </div>
 
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-6 auto-rows-[300px]">
-            <motion.div whileHover={{ y: -5 }} className="md:col-span-2 bg-white rounded-3xl p-8 border border-slate-200 shadow-sm hover:shadow-xl transition-all relative overflow-hidden group">
-              <div className="absolute top-0 right-0 w-64 h-64 bg-blue-50 rounded-full blur-3xl -mr-20 -mt-20 transition-all group-hover:bg-blue-100" />
-              <div className="relative z-10 h-full flex flex-col justify-between">
-                <div className="w-14 h-14 bg-blue-600 text-white rounded-2xl flex items-center justify-center shadow-lg shadow-blue-600/30">
-                  <Zap size={28} />
-                </div>
-                <div>
-                  <h3 className="text-2xl font-display font-bold text-slate-900 mb-3">Electrical Projects</h3>
-                  <p className="text-slate-600 text-lg max-w-md">Complete electrical panels, high-grade cables, and full-scale project execution with safety first.</p>
-                </div>
-              </div>
-            </motion.div>
-            
-            <motion.div whileHover={{ y: -5 }} className="bg-slate-900 rounded-3xl p-8 border border-slate-800 shadow-sm hover:shadow-xl transition-all relative overflow-hidden group text-white">
-              <div className="absolute bottom-0 right-0 w-48 h-48 bg-cyan-500/20 rounded-full blur-3xl -mr-10 -mb-10 transition-all group-hover:bg-cyan-500/30" />
-              <div className="relative z-10 h-full flex flex-col justify-between">
-                <div className="w-14 h-14 bg-cyan-500/20 text-cyan-400 rounded-2xl flex items-center justify-center border border-cyan-500/30">
-                  <ShieldCheck size={28} />
-                </div>
-                <div>
-                  <h3 className="text-2xl font-display font-bold mb-3">Security Systems</h3>
-                  <p className="text-slate-400">State-of-the-art CCTV and Fire Alarm installations.</p>
-                </div>
-              </div>
-            </motion.div>
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+            {services.map((service, idx) => {
+              const Icon = iconMap[service.iconName] || Zap;
+              return (
+                <motion.div 
+                  key={service.id}
+                  whileHover={{ y: -5 }} 
+                  className={`bg-white rounded-3xl p-8 border border-slate-200 shadow-sm hover:shadow-xl transition-all relative overflow-hidden group ${idx === 0 ? 'md:col-span-2' : ''}`}
+                >
+                  <div className="absolute top-0 right-0 w-64 h-64 bg-blue-50 rounded-full blur-3xl -mr-20 -mt-20 transition-all group-hover:bg-blue-100" />
+                  <div className="relative z-10 h-full flex flex-col justify-between">
+                    <div className="w-14 h-14 bg-blue-600 text-white rounded-2xl flex items-center justify-center shadow-lg shadow-blue-600/30">
+                      <Icon size={28} />
+                    </div>
+                    <div>
+                      <h3 className="text-2xl font-display font-bold text-slate-900 mb-3">
+                        {language === 'en' ? (service.title_en || service.title) : (service.title_th || service.title_en || service.title)}
+                      </h3>
+                      <p className="text-slate-600 text-lg max-w-md">
+                        {language === 'en' ? (service.description_en || service.description) : (service.description_th || service.description_en || service.description)}
+                      </p>
+                    </div>
+                  </div>
+                </motion.div>
+              );
+            })}
+          </div>
+          
+          <div className="mt-12 text-center">
+            <Link to="/services" className="inline-flex items-center gap-2 text-blue-600 font-bold hover:gap-3 transition-all">
+              {language === 'en' ? "View All Services" : "ดูบริการทั้งหมด"} <ArrowRight size={20} />
+            </Link>
+          </div>
+        </div>
+      </section>
 
-            <motion.div whileHover={{ y: -5 }} className="bg-white rounded-3xl p-8 border border-slate-200 shadow-sm hover:shadow-xl transition-all relative overflow-hidden group">
-              <div className="absolute top-0 left-0 w-48 h-48 bg-purple-50 rounded-full blur-3xl -ml-10 -mt-10 transition-all group-hover:bg-purple-100" />
-              <div className="relative z-10 h-full flex flex-col justify-between">
-                <div className="w-14 h-14 bg-purple-600 text-white rounded-2xl flex items-center justify-center shadow-lg shadow-purple-600/30">
-                  <Network size={28} />
-                </div>
-                <div>
-                  <h3 className="text-2xl font-display font-bold text-slate-900 mb-3">Networking</h3>
-                  <p className="text-slate-600">LAN and Fiber Optics.</p>
-                </div>
-              </div>
-            </motion.div>
+      {/* Project Gallery Section */}
+      <section className="py-24 bg-white">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+          <div className="flex flex-col md:flex-row justify-between items-end mb-12 gap-6">
+            <div>
+              <h2 className="text-sm font-bold text-blue-600 uppercase tracking-widest mb-2">
+                {language === 'en' ? "Our Portfolio" : "ผลงานของเรา"}
+              </h2>
+              <h3 className="text-4xl md:text-5xl font-display font-bold text-slate-900">
+                {language === 'en' ? "Project Gallery" : "แกลเลอรีโครงการ"}
+              </h3>
+            </div>
+            <Link to="/projects" className="bg-slate-900 text-white px-8 py-3 rounded-full font-bold hover:bg-slate-800 transition">
+              {language === 'en' ? "View Projects" : "ดูโครงการ"}
+            </Link>
+          </div>
 
-            <motion.div whileHover={{ y: -5 }} className="md:col-span-2 bg-gradient-to-br from-blue-50 to-cyan-50 rounded-3xl p-8 border border-blue-100 shadow-sm hover:shadow-xl transition-all relative overflow-hidden group">
-              <div className="relative z-10 h-full flex flex-col justify-between">
-                <div className="w-14 h-14 bg-white text-blue-600 rounded-2xl flex items-center justify-center shadow-sm">
-                  <PhoneCall size={28} />
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-8">
+            {gallery.map((item) => (
+              <motion.div 
+                key={item.id}
+                initial={{ opacity: 0, scale: 0.95 }}
+                whileInView={{ opacity: 1, scale: 1 }}
+                viewport={{ once: true }}
+                className="group relative aspect-[4/3] rounded-3xl overflow-hidden shadow-lg"
+              >
+                <img 
+                  src={item.imageUrl} 
+                  alt={item.title_en} 
+                  className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-110" 
+                  referrerPolicy="no-referrer"
+                />
+                <div className="absolute inset-0 bg-gradient-to-t from-slate-900/80 via-slate-900/20 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300 flex flex-col justify-end p-8">
+                  <p className="text-blue-400 text-sm font-bold uppercase tracking-widest mb-2">{item.category}</p>
+                  <h4 className="text-white text-2xl font-bold">
+                    {language === 'en' ? item.title_en : (item.title_th || item.title_en)}
+                  </h4>
                 </div>
-                <div>
-                  <h3 className="text-2xl font-display font-bold text-slate-900 mb-3">Telecom Solutions</h3>
-                  <p className="text-slate-600 text-lg max-w-md">Modern telephone system installation and reliable maintenance services.</p>
+              </motion.div>
+            ))}
+          </div>
+        </div>
+      </section>
+
+      {/* Why Choose Us Section */}
+      <section className="py-24 bg-slate-900 text-white relative overflow-hidden">
+        <div className="absolute top-0 right-0 w-[500px] h-[500px] bg-blue-600/10 rounded-full blur-[120px] -mr-64 -mt-64" />
+        <div className="absolute bottom-0 left-0 w-[500px] h-[500px] bg-purple-600/10 rounded-full blur-[120px] -ml-64 -mb-64" />
+        
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 relative z-10">
+          <div className="text-center mb-20">
+            <h2 className="text-sm font-bold text-blue-400 uppercase tracking-widest mb-2">
+              {language === 'en' ? "Why Us" : "ทำไมต้องเลือกเรา"}
+            </h2>
+            <h3 className="text-4xl md:text-5xl font-display font-bold">
+              {language === 'en' ? "Why Choose V Mind?" : "ทำไมต้องเลือก V Mind?"}
+            </h3>
+          </div>
+
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8">
+            {whyUs.map((feature) => {
+              const Icon = iconMap[feature.iconName] || Zap;
+              return (
+                <div key={feature.id} className="p-8 rounded-3xl bg-white/5 border border-white/10 backdrop-blur-sm hover:bg-white/10 transition-all group">
+                  <div className="w-14 h-14 bg-blue-600/20 text-blue-400 rounded-2xl flex items-center justify-center mb-6 group-hover:scale-110 transition-transform">
+                    <Icon size={28} />
+                  </div>
+                  <h4 className="text-xl font-bold mb-4">
+                    {language === 'en' ? feature.title_en : (feature.title_th || feature.title_en)}
+                  </h4>
+                  <p className="text-slate-400 leading-relaxed">
+                    {language === 'en' ? feature.description_en : (feature.description_th || feature.description_en)}
+                  </p>
                 </div>
-              </div>
-            </motion.div>
+              );
+            })}
           </div>
         </div>
       </section>
@@ -245,14 +337,16 @@ export default function Home() {
                     onClick={() => setOpenFaq(openFaq === faq.id ? null : faq.id)}
                     className="w-full px-6 py-5 flex justify-between items-center text-left focus:outline-none"
                   >
-                    <span className="font-semibold text-slate-900 pr-8">{faq.question}</span>
+                    <span className="font-semibold text-slate-900 pr-8">
+                      {language === 'en' ? faq.question_en : (faq.question_th || faq.question_en)}
+                    </span>
                     <span className="text-blue-600 shrink-0">
                       {openFaq === faq.id ? <ChevronUp size={20} /> : <ChevronDown size={20} />}
                     </span>
                   </button>
                   {openFaq === faq.id && (
                     <div className="px-6 pb-5 text-slate-600 leading-relaxed">
-                      {faq.answer}
+                      {language === 'en' ? faq.answer_en : (faq.answer_th || faq.answer_en)}
                     </div>
                   )}
                 </div>
