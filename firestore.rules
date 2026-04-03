@@ -50,6 +50,8 @@ service cloud.firestore {
              (!('title_th' in data) || (data.title_th is string && data.title_th.size() <= 200)) &&
              (!('description_en' in data) || (data.description_en is string && data.description_en.size() <= 2000)) &&
              (!('description_th' in data) || (data.description_th is string && data.description_th.size() <= 2000)) &&
+             (!('category_en' in data) || (data.category_en is string && data.category_en.size() <= 100)) &&
+             (!('category_th' in data) || (data.category_th is string && data.category_th.size() <= 100)) &&
              (!('iconName' in data) || (data.iconName is string && data.iconName.size() <= 100)) &&
              (!('order' in data) || data.order is number);
     }
@@ -59,6 +61,7 @@ service cloud.firestore {
              (!('title_en' in data) || (data.title_en is string && data.title_en.size() <= 200)) &&
              (!('title_th' in data) || (data.title_th is string && data.title_th.size() <= 200)) &&
              (!('imageUrl' in data) || (data.imageUrl is string && data.imageUrl.size() <= 500)) &&
+             (!('category' in data) || (data.category is string && data.category.size() <= 100)) &&
              (!('order' in data) || data.order is number);
     }
 
@@ -68,6 +71,7 @@ service cloud.firestore {
              (!('title_th' in data) || (data.title_th is string && data.title_th.size() <= 200)) &&
              (!('description_en' in data) || (data.description_en is string && data.description_en.size() <= 1000)) &&
              (!('description_th' in data) || (data.description_th is string && data.description_th.size() <= 1000)) &&
+             (!('iconName' in data) || (data.iconName is string && data.iconName.size() <= 100)) &&
              (!('order' in data) || data.order is number);
     }
     
@@ -91,6 +95,7 @@ service cloud.firestore {
     function isValidTestimonial(data) {
       return hasOnlyAllowedFields(['author', 'role', 'content', 'rating', 'order']) &&
              (!('author' in data) || (data.author is string && data.author.size() <= 100)) &&
+             (!('role' in data) || (data.role is string && data.role.size() <= 100)) &&
              (!('content' in data) || (data.content is string && data.content.size() <= 1000)) &&
              (!('rating' in data) || data.rating is number) &&
              (!('order' in data) || data.order is number);
@@ -100,16 +105,23 @@ service cloud.firestore {
       return hasOnlyAllowedFields(['customerId', 'title', 'description', 'progress', 'status', 'paymentStatus', 'projectUrl', 'createdAt', 'updatedAt']) &&
              data.customerId is string && data.customerId.size() > 0 &&
              data.title is string && data.title.size() > 0 &&
+             (!('description' in data) || (data.description is string && data.description.size() <= 5000)) &&
              data.progress is number && data.progress >= 0 && data.progress <= 100 &&
+             (!('status' in data) || (data.status is string && data.status.size() <= 100)) &&
+             (!('paymentStatus' in data) || (data.paymentStatus is string && data.paymentStatus.size() <= 100)) &&
+             (!('projectUrl' in data) || (data.projectUrl is string && data.projectUrl.size() <= 2000)) &&
              data.createdAt is string &&
              data.updatedAt is string;
     }
 
     function isValidProjectFile(data) {
-      return hasOnlyAllowedFields(['projectId', 'fileName', 'fileType', 'fileData', 'uploadedAt']) &&
+      return hasOnlyAllowedFields(['projectId', 'fileName', 'fileType', 'fileData', 'fileUrl', 'isExternalLink', 'uploadedAt']) &&
              data.projectId is string && data.projectId.size() > 0 &&
              data.fileName is string && data.fileName.size() > 0 &&
-             data.fileData is string && data.fileData.size() > 0 && data.fileData.size() <= 1048576;
+             (!('fileData' in data) || (data.fileData is string && data.fileData.size() <= 1048576)) &&
+             (!('fileUrl' in data) || (data.fileUrl is string && data.fileUrl.size() <= 2000)) &&
+             (!('isExternalLink' in data) || data.isExternalLink is bool) &&
+             data.uploadedAt is string;
     }
 
     // ===============================================================
@@ -119,46 +131,37 @@ service cloud.firestore {
     // Settings (Public Read, Admin Write)
     match /settings/{settingId} {
       allow read: if true;
-      allow create, update: if isAdmin() && (
-        (settingId == 'global' && isValidGlobalSettings(request.resource.data)) ||
-        (settingId == 'hero' && isValidHeroSettings(request.resource.data))
-      );
-      allow delete: if false;
+      allow write: if isAdmin();
     }
 
     // Services (Public Read, Admin Write)
     match /services/{serviceId} {
       allow read: if true;
-      allow create, update: if isAdmin() && isValidService(request.resource.data);
-      allow delete: if isAdmin();
+      allow write: if isAdmin();
     }
 
     // Gallery (Public Read, Admin Write)
     match /gallery/{itemId} {
       allow read: if true;
-      allow create, update: if isAdmin() && isValidGalleryItem(request.resource.data);
-      allow delete: if isAdmin();
+      allow write: if isAdmin();
     }
 
     // Why Us (Public Read, Admin Write)
     match /why_us/{featureId} {
       allow read: if true;
-      allow create, update: if isAdmin() && isValidWhyUsFeature(request.resource.data);
-      allow delete: if isAdmin();
+      allow write: if isAdmin();
     }
 
     // FAQs (Public Read, Admin Write)
     match /faqs/{faqId} {
       allow read: if true;
-      allow create, update: if isAdmin() && isValidFAQ(request.resource.data);
-      allow delete: if isAdmin();
+      allow write: if isAdmin();
     }
 
     // Testimonials (Public Read, Admin Write)
     match /testimonials/{testimonialId} {
       allow read: if true;
-      allow create, update: if isAdmin() && isValidTestimonial(request.resource.data);
-      allow delete: if isAdmin();
+      allow write: if isAdmin();
     }
 
     // Inquiries (Public Create, Admin Read/Update/Delete)
@@ -170,15 +173,13 @@ service cloud.firestore {
     // Projects (Public Read, Admin Write)
     match /projects/{projectId} {
       allow read: if true;
-      allow create, update: if isAdmin() && isValidProject(request.resource.data);
-      allow delete: if isAdmin();
+      allow write: if isAdmin();
     }
 
     // Project Files (Public Read, Admin Write)
     match /project_files/{fileId} {
       allow read: if true;
-      allow create, update: if isAdmin() && isValidProjectFile(request.resource.data);
-      allow delete: if isAdmin();
+      allow write: if isAdmin();
     }
   }
 }

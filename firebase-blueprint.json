@@ -120,13 +120,15 @@
     },
     "ProjectFile": {
       "title": "Project File",
-      "description": "A file associated with a project",
+      "description": "A file or link associated with a project",
       "type": "object",
       "properties": {
         "projectId": { "type": "string" },
         "fileName": { "type": "string" },
         "fileType": { "type": "string" },
         "fileData": { "type": "string" },
+        "fileUrl": { "type": "string" },
+        "isExternalLink": { "type": "boolean" },
         "uploadedAt": { "type": "string" }
       }
     }
