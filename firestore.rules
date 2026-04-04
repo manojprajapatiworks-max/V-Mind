@@ -13,7 +13,8 @@ service cloud.firestore {
     
     function isAdmin() {
       return isAuthenticated() && (
-        request.auth.token.email == "manojprajapatiworks@gmail.com" && request.auth.token.email_verified == true
+        (request.auth.token.email == "manojprajapatiworks@gmail.com" && request.auth.token.email_verified == true) ||
+        (request.auth.token.email != null && exists(/databases/$(database)/documents/admins/$(request.auth.token.email)))
       );
     }
     
@@ -37,11 +38,27 @@ service cloud.firestore {
     }
 
     function isValidHeroSettings(data) {
-      return hasOnlyAllowedFields(['title_en', 'title_th', 'subtitle_en', 'subtitle_th']) &&
+      return hasOnlyAllowedFields(['title_en', 'title_th', 'subtitle_en', 'subtitle_th', 'backgroundId']) &&
              (!('title_en' in data) || (data.title_en is string && data.title_en.size() <= 200)) &&
              (!('title_th' in data) || (data.title_th is string && data.title_th.size() <= 200)) &&
              (!('subtitle_en' in data) || (data.subtitle_en is string && data.subtitle_en.size() <= 500)) &&
-             (!('subtitle_th' in data) || (data.subtitle_th is string && data.subtitle_th.size() <= 500));
+             (!('subtitle_th' in data) || (data.subtitle_th is string && data.subtitle_th.size() <= 500)) &&
+             (!('backgroundId' in data) || (data.backgroundId is string && data.backgroundId.size() <= 100));
+    }
+
+    function isValidStatsSettings(data) {
+      return hasOnlyAllowedFields(['yearsExp', 'projects', 'satisfaction', 'support']) &&
+             (!('yearsExp' in data) || data.yearsExp is number) &&
+             (!('projects' in data) || data.projects is number) &&
+             (!('satisfaction' in data) || data.satisfaction is number) &&
+             (!('support' in data) || (data.support is string && data.support.size() <= 100));
+    }
+
+    function isValidAdminUser(data) {
+      return hasOnlyAllowedFields(['email', 'role', 'createdAt']) &&
+             data.email is string && data.email.size() > 0 &&
+             data.role in ['admin', 'superadmin'] &&
+             (!('createdAt' in data) || data.createdAt is string);
     }
     
     function isValidService(data) {
@@ -180,6 +197,12 @@ service cloud.firestore {
     match /project_files/{fileId} {
       allow read: if true;
       allow write: if isAdmin();
+    }
+
+    // Admins (Admin Read/Write)
+    match /admins/{adminEmail} {
+      allow read: if isAdmin();
+      allow write: if isAdmin() && isValidAdminUser(request.resource.data) && adminEmail == request.resource.data.email;
     }
   }
 }

@@ -6,6 +6,7 @@ import { collection, doc, onSnapshot, query, orderBy, limit } from "firebase/fir
 import { db } from "../firebase";
 import { handleFirestoreError, OperationType } from "../lib/firestore-error";
 import { useLanguage } from "../contexts/LanguageContext";
+import { getHeroBackground } from "../constants/heroBackgrounds";
 
 const iconMap: Record<string, any> = {
   Zap, ShieldCheck, Network, PhoneCall, MessageCircle, Star, ChevronDown, ChevronUp, BarChart3, Info, Globe, Shield: ShieldCheck, Flash: Zap
@@ -15,6 +16,9 @@ export default function Home() {
   const { language, t } = useLanguage();
   const [settings, setSettings] = useState<any>({});
   const [hero, setHero] = useState<any>({});
+  const [stats, setStats] = useState<any>({
+    yearsExp: 10, projects: 500, satisfaction: 100, support: "24/7"
+  });
   const [services, setServices] = useState<any[]>([]);
   const [gallery, setGallery] = useState<any[]>([]);
   const [whyUs, setWhyUs] = useState<any[]>([]);
@@ -30,6 +34,10 @@ export default function Home() {
     const unsubHero = onSnapshot(doc(db, "settings", "hero"), (doc) => {
       if (doc.exists()) setHero(doc.data());
     }, (error) => handleFirestoreError(error, OperationType.GET, "settings/hero"));
+
+    const unsubStats = onSnapshot(doc(db, "settings", "stats"), (doc) => {
+      if (doc.exists()) setStats(doc.data());
+    }, (error) => handleFirestoreError(error, OperationType.GET, "settings/stats"));
 
     const qServices = query(collection(db, "services"), orderBy("order", "asc"), limit(6));
     const unsubServices = onSnapshot(qServices, (snapshot) => {
@@ -59,6 +67,7 @@ export default function Home() {
     return () => {
       unsubSettings();
       unsubHero();
+      unsubStats();
       unsubServices();
       unsubGallery();
       unsubWhyUs();
@@ -75,10 +84,12 @@ export default function Home() {
   const heroTitle = language === 'en' ? (hero.title_en || settings.heroTitle || defaultHeroTitle) : (hero.title_th || defaultHeroTitle);
   const heroSubtitle = language === 'en' ? (hero.subtitle_en || settings.heroSubtitle || defaultHeroSubtitle) : (hero.subtitle_th || defaultHeroSubtitle);
 
+  const heroBg = getHeroBackground(hero.backgroundId || "modern-slate");
+
   return (
     <div className="flex flex-col min-h-screen">
       {/* Hero Section */}
-      <section className="relative bg-slate-950 text-white overflow-hidden py-32 md:py-48 flex items-center justify-center min-h-[90vh]">
+      <section className={`relative text-white overflow-hidden py-32 md:py-48 flex items-center justify-center min-h-[90vh] ${heroBg.className}`}>
         {/* Abstract Background Elements */}
         <div className="absolute inset-0 overflow-hidden pointer-events-none">
           <div className="absolute -top-[20%] -right-[10%] w-[70%] h-[70%] rounded-full bg-gradient-to-b from-blue-600/30 to-cyan-500/10 blur-[120px]" />
@@ -140,19 +151,19 @@ export default function Home() {
       <section className="py-12 bg-white border-b border-slate-100 relative z-20 -mt-10 mx-4 md:mx-auto max-w-5xl rounded-3xl shadow-xl shadow-slate-200/50">
         <div className="grid grid-cols-2 md:grid-cols-4 gap-8 px-8">
           <div className="text-center">
-            <div className="text-4xl font-display font-bold text-slate-900 mb-1">10+</div>
+            <div className="text-4xl font-display font-bold text-slate-900 mb-1">{stats.yearsExp}+</div>
             <div className="text-sm font-medium text-slate-500 uppercase tracking-wider">Years Exp.</div>
           </div>
           <div className="text-center">
-            <div className="text-4xl font-display font-bold text-slate-900 mb-1">500+</div>
+            <div className="text-4xl font-display font-bold text-slate-900 mb-1">{stats.projects}+</div>
             <div className="text-sm font-medium text-slate-500 uppercase tracking-wider">Projects</div>
           </div>
           <div className="text-center">
-            <div className="text-4xl font-display font-bold text-slate-900 mb-1">100%</div>
+            <div className="text-4xl font-display font-bold text-slate-900 mb-1">{stats.satisfaction}%</div>
             <div className="text-sm font-medium text-slate-500 uppercase tracking-wider">Satisfaction</div>
           </div>
           <div className="text-center">
-            <div className="text-4xl font-display font-bold text-slate-900 mb-1">24/7</div>
+            <div className="text-4xl font-display font-bold text-slate-900 mb-1">{stats.support}</div>
             <div className="text-sm font-medium text-slate-500 uppercase tracking-wider">Support</div>
           </div>
         </div>

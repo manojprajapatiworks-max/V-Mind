@@ -22,7 +22,29 @@
         "title_en": { "type": "string" },
         "title_th": { "type": "string" },
         "subtitle_en": { "type": "string" },
-        "subtitle_th": { "type": "string" }
+        "subtitle_th": { "type": "string" },
+        "backgroundId": { "type": "string" }
+      }
+    },
+    "StatsSettings": {
+      "title": "Stats Settings",
+      "description": "Company statistics displayed on the home page",
+      "type": "object",
+      "properties": {
+        "yearsExp": { "type": "number" },
+        "projects": { "type": "number" },
+        "satisfaction": { "type": "number" },
+        "support": { "type": "string" }
+      }
+    },
+    "AdminUser": {
+      "title": "Admin User",
+      "description": "Authorized admin users",
+      "type": "object",
+      "properties": {
+        "email": { "type": "string" },
+        "role": { "type": "string" },
+        "createdAt": { "type": "string" }
       }
     },
     "Service": {
@@ -136,6 +158,8 @@
   "firestore": {
     "/settings/global": { "schema": { "$ref": "#/entities/GlobalSettings" }, "description": "Global site settings" },
     "/settings/hero": { "schema": { "$ref": "#/entities/HeroSettings" }, "description": "Hero section content" },
+    "/settings/stats": { "schema": { "$ref": "#/entities/StatsSettings" }, "description": "Company statistics" },
+    "/admins/{adminId}": { "schema": { "$ref": "#/entities/AdminUser" }, "description": "Authorized admin users" },
     "/services/{serviceId}": { "schema": { "$ref": "#/entities/Service" }, "description": "List of services" },
     "/gallery/{itemId}": { "schema": { "$ref": "#/entities/GalleryItem" }, "description": "Project gallery items" },
     "/why_us/{featureId}": { "schema": { "$ref": "#/entities/WhyUsFeature" }, "description": "Why choose us features" },

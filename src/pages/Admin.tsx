@@ -1,17 +1,25 @@
 import React, { useState, useEffect, FormEvent } from "react";
-import { signInWithPopup, signOut, onAuthStateChanged } from "firebase/auth";
+import { initializeApp, getApps } from "firebase/app";
+import { getAuth, signInWithPopup, signOut, onAuthStateChanged, signInWithEmailAndPassword, createUserWithEmailAndPassword } from "firebase/auth";
 import { doc, setDoc, onSnapshot, collection, addDoc, updateDoc, deleteDoc, query, orderBy, where, getDocs } from "firebase/firestore";
 import { auth, db, googleProvider } from "../firebase";
-import { LogOut, Plus, Edit, Trash2, Save, X, LayoutDashboard, Settings, List, MessageSquare, FolderKanban, FileUp, Link as LinkIcon, Image as ImageIcon, CheckCircle, BarChart3, Download, Globe, HelpCircle, Info, Zap, Briefcase, ShieldCheck } from "lucide-react";
+import firebaseConfig from "../../firebase-applet-config.json";
+import { LogOut, Plus, Edit, Trash2, Save, X, LayoutDashboard, Settings, List, MessageSquare, FolderKanban, FileUp, Link as LinkIcon, Image as ImageIcon, CheckCircle, BarChart3, Download, Globe, HelpCircle, Info, Zap, Briefcase, ShieldCheck, Users, TrendingUp, Lock, Mail } from "lucide-react";
 import { handleFirestoreError, OperationType } from "../lib/firestore-error";
 import { toast } from "sonner";
 import { motion } from "framer-motion";
 import ConfirmDialog from "../components/ConfirmDialog";
+import { HERO_BACKGROUNDS, getHeroBackground } from "../constants/heroBackgrounds";
 
 export default function Admin() {
   const [user, setUser] = useState<any>(null);
   const [activeTab, setActiveTab] = useState("dashboard");
   const [loading, setLoading] = useState(true);
+  
+  // Login state
+  const [loginEmail, setLoginEmail] = useState("");
+  const [loginPassword, setLoginPassword] = useState("");
+  const [isLoggingIn, setIsLoggingIn] = useState(false);
   
   const [confirmDialog, setConfirmDialog] = useState<{
     isOpen: boolean;
@@ -47,6 +55,28 @@ export default function Admin() {
     }
   };
 
+  const handleEmailLogin = async (e: FormEvent) => {
+    e.preventDefault();
+    if (!loginEmail || !loginPassword) {
+      toast.error("Please enter email and password");
+      return;
+    }
+    setIsLoggingIn(true);
+    try {
+      await signInWithEmailAndPassword(auth, loginEmail, loginPassword);
+      toast.success("Logged in successfully");
+    } catch (err: any) {
+      console.error(err);
+      if (err.code === 'auth/user-not-found' || err.code === 'auth/wrong-password' || err.code === 'auth/invalid-credential') {
+        toast.error("Invalid email or password");
+      } else {
+        toast.error("Login failed: " + err.message);
+      }
+    } finally {
+      setIsLoggingIn(false);
+    }
+  };
+
   const handleLogout = () => {
     signOut(auth);
     toast.success("Logged out successfully");
@@ -57,14 +87,63 @@ export default function Admin() {
   if (!user) {
     return (
       <div className="min-h-screen bg-slate-50 flex items-center justify-center p-4">
-        <div className="bg-white p-8 rounded-2xl shadow-lg max-w-md w-full text-center">
-          <h1 className="text-2xl font-bold text-slate-900 mb-2">Admin Login</h1>
-          <p className="text-slate-500 mb-8">Sign in to manage V Mind website content.</p>
+        <div className="bg-white p-8 rounded-2xl shadow-xl max-w-md w-full">
+          <div className="text-center mb-8">
+            <div className="inline-flex p-3 bg-blue-100 text-blue-600 rounded-2xl mb-4">
+              <Lock size={32} />
+            </div>
+            <h1 className="text-2xl font-bold text-slate-900">Admin Login</h1>
+            <p className="text-slate-500">Sign in to manage V Mind content.</p>
+          </div>
+
+          <form onSubmit={handleEmailLogin} className="space-y-4 mb-6">
+            <div>
+              <label className="block text-sm font-bold text-slate-700 mb-1">Email Address</label>
+              <div className="relative">
+                <Mail className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" size={18} />
+                <input
+                  type="email"
+                  value={loginEmail}
+                  onChange={(e) => setLoginEmail(e.target.value)}
+                  className="w-full pl-10 pr-4 py-3 bg-slate-50 border border-slate-200 rounded-xl focus:ring-2 focus:ring-blue-500 outline-none transition"
+                  placeholder="admin@vmind.com"
+                  required
+                />
+              </div>
+            </div>
+            <div>
+              <label className="block text-sm font-bold text-slate-700 mb-1">Password</label>
+              <div className="relative">
+                <Lock className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" size={18} />
+                <input
+                  type="password"
+                  value={loginPassword}
+                  onChange={(e) => setLoginPassword(e.target.value)}
+                  className="w-full pl-10 pr-4 py-3 bg-slate-50 border border-slate-200 rounded-xl focus:ring-2 focus:ring-blue-500 outline-none transition"
+                  placeholder="••••••••"
+                  required
+                />
+              </div>
+            </div>
+            <button
+              type="submit"
+              disabled={isLoggingIn}
+              className="w-full bg-blue-600 text-white font-bold py-3 px-4 rounded-xl hover:bg-blue-700 transition flex items-center justify-center gap-2 shadow-lg shadow-blue-600/20 disabled:opacity-50"
+            >
+              {isLoggingIn ? "Signing in..." : "Sign In"}
+            </button>
+          </form>
+
+          <div className="relative mb-6">
+            <div className="absolute inset-0 flex items-center"><div className="w-full border-t border-slate-200"></div></div>
+            <div className="relative flex justify-center text-sm"><span className="px-2 bg-white text-slate-500">Or continue with</span></div>
+          </div>
+
           <button
             onClick={handleLogin}
-            className="w-full bg-blue-600 text-white font-bold py-3 px-4 rounded-xl hover:bg-blue-700 transition flex items-center justify-center gap-2"
+            className="w-full bg-white border border-slate-200 text-slate-700 font-bold py-3 px-4 rounded-xl hover:bg-slate-50 transition flex items-center justify-center gap-2"
           >
-            Sign in with Google
+            <Globe size={18} /> Sign in with Google
           </button>
         </div>
       </div>
@@ -82,6 +161,7 @@ export default function Admin() {
       title: "Context",
       items: [
         { id: "hero", label: "Hero Section", icon: ImageIcon },
+        { id: "stats", label: "Company Stats", icon: TrendingUp },
         { id: "services", label: "Services", icon: List },
         { id: "gallery", label: "Project Gallery", icon: ImageIcon },
         { id: "why-us", label: "Why Choose Us", icon: HelpCircle },
@@ -99,6 +179,7 @@ export default function Admin() {
       title: "System",
       items: [
         { id: "settings", label: "Site Settings", icon: Settings },
+        { id: "admins", label: "Manage Admins", icon: Users },
       ]
     }
   ];
@@ -145,6 +226,7 @@ export default function Admin() {
       <div className="flex-1 p-4 md:p-8 overflow-y-auto">
         {activeTab === "dashboard" && <DashboardStats setActiveTab={setActiveTab} />}
         {activeTab === "hero" && <HeroEditor />}
+        {activeTab === "stats" && <StatsEditor />}
         {activeTab === "settings" && <SettingsEditor />}
         {activeTab === "services" && <ServicesEditor openConfirm={openConfirm} />}
         {activeTab === "gallery" && <GalleryEditor openConfirm={openConfirm} />}
@@ -152,6 +234,7 @@ export default function Admin() {
         {activeTab === "faqs" && <FaqsEditor openConfirm={openConfirm} />}
         {activeTab === "projects" && <ProjectsEditor openConfirm={openConfirm} />}
         {activeTab === "inquiries" && <InquiriesViewer openConfirm={openConfirm} />}
+        {activeTab === "admins" && <AdminsEditor openConfirm={openConfirm} />}
       </div>
 
       <ConfirmDialog
@@ -348,7 +431,7 @@ function DashboardStats({ setActiveTab }: { setActiveTab: (tab: string) => void 
 
 function HeroEditor() {
   const [hero, setHero] = useState<any>({
-    title_en: "", title_th: "", subtitle_en: "", subtitle_th: ""
+    title_en: "", title_th: "", subtitle_en: "", subtitle_th: "", backgroundId: "modern-slate"
   });
   const [saving, setSaving] = useState(false);
 
@@ -384,42 +467,148 @@ function HeroEditor() {
         </button>
       </div>
 
-      <div className="bg-white rounded-2xl shadow-sm border border-slate-200 p-6 space-y-6">
+      <div className="bg-white rounded-2xl shadow-sm border border-slate-200 p-6 space-y-8">
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
           <div>
-            <label className="block text-sm font-medium text-slate-700 mb-1">Hero Title (EN)</label>
+            <label className="block text-sm font-bold text-slate-700 mb-2">Hero Title (EN)</label>
             <input 
               type="text" 
               value={hero.title_en} 
               onChange={e => setHero({...hero, title_en: e.target.value})} 
-              className="w-full px-3 py-2 border border-slate-300 rounded-lg outline-none focus:ring-2 focus:ring-blue-500" 
+              className="w-full px-4 py-2 bg-slate-50 border border-slate-200 rounded-xl outline-none focus:ring-2 focus:ring-blue-500 transition" 
             />
           </div>
           <div>
-            <label className="block text-sm font-medium text-slate-700 mb-1">Hero Title (TH)</label>
+            <label className="block text-sm font-bold text-slate-700 mb-2">Hero Title (TH)</label>
             <input 
               type="text" 
               value={hero.title_th} 
               onChange={e => setHero({...hero, title_th: e.target.value})} 
-              className="w-full px-3 py-2 border border-slate-300 rounded-lg outline-none focus:ring-2 focus:ring-blue-500" 
+              className="w-full px-4 py-2 bg-slate-50 border border-slate-200 rounded-xl outline-none focus:ring-2 focus:ring-blue-500 transition" 
             />
           </div>
           <div>
-            <label className="block text-sm font-medium text-slate-700 mb-1">Hero Subtitle (EN)</label>
+            <label className="block text-sm font-bold text-slate-700 mb-2">Hero Subtitle (EN)</label>
             <textarea 
               rows={3} 
               value={hero.subtitle_en} 
               onChange={e => setHero({...hero, subtitle_en: e.target.value})} 
-              className="w-full px-3 py-2 border border-slate-300 rounded-lg outline-none focus:ring-2 focus:ring-blue-500 resize-none" 
+              className="w-full px-4 py-2 bg-slate-50 border border-slate-200 rounded-xl outline-none focus:ring-2 focus:ring-blue-500 transition resize-none" 
             />
           </div>
           <div>
-            <label className="block text-sm font-medium text-slate-700 mb-1">Hero Subtitle (TH)</label>
+            <label className="block text-sm font-bold text-slate-700 mb-2">Hero Subtitle (TH)</label>
             <textarea 
               rows={3} 
               value={hero.subtitle_th} 
               onChange={e => setHero({...hero, subtitle_th: e.target.value})} 
-              className="w-full px-3 py-2 border border-slate-300 rounded-lg outline-none focus:ring-2 focus:ring-blue-500 resize-none" 
+              className="w-full px-4 py-2 bg-slate-50 border border-slate-200 rounded-xl outline-none focus:ring-2 focus:ring-blue-500 transition resize-none" 
+            />
+          </div>
+        </div>
+
+        <div>
+          <label className="block text-sm font-bold text-slate-700 mb-4">Background Style</label>
+          <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-5 gap-4">
+            {HERO_BACKGROUNDS.map((bg) => (
+              <button
+                key={bg.id}
+                onClick={() => setHero({ ...hero, backgroundId: bg.id })}
+                className={`group relative aspect-video rounded-xl overflow-hidden border-2 transition ${hero.backgroundId === bg.id ? 'border-blue-600 ring-2 ring-blue-600/20' : 'border-slate-200 hover:border-slate-300'}`}
+              >
+                <div className={`absolute inset-0 ${bg.className}`} />
+                <div className="absolute inset-0 flex items-center justify-center bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity">
+                  <span className="text-[10px] text-white font-bold uppercase tracking-wider">{bg.name}</span>
+                </div>
+                {hero.backgroundId === bg.id && (
+                  <div className="absolute top-1 right-1 bg-blue-600 text-white rounded-full p-0.5">
+                    <CheckCircle size={12} />
+                  </div>
+                )}
+              </button>
+            ))}
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function StatsEditor() {
+  const [stats, setStats] = useState<any>({
+    yearsExp: 0, projects: 0, satisfaction: 0, support: ""
+  });
+  const [saving, setSaving] = useState(false);
+
+  useEffect(() => {
+    const unsub = onSnapshot(doc(db, "settings", "stats"), (doc) => {
+      if (doc.exists()) setStats(doc.data());
+    }, (error) => handleFirestoreError(error, OperationType.GET, "settings/stats"));
+    return () => unsub();
+  }, []);
+
+  const handleSave = async () => {
+    setSaving(true);
+    try {
+      await setDoc(doc(db, "settings", "stats"), stats);
+      toast.success("Company stats updated successfully");
+    } catch (err) {
+      handleFirestoreError(err, OperationType.WRITE, "settings/stats");
+      toast.error("Failed to update stats");
+    }
+    setSaving(false);
+  };
+
+  return (
+    <div className="space-y-6 max-w-3xl">
+      <div className="flex justify-between items-center">
+        <h2 className="text-2xl font-bold text-slate-900">Company Statistics</h2>
+        <button 
+          onClick={handleSave} 
+          disabled={saving}
+          className="bg-blue-600 text-white px-6 py-2 rounded-lg font-medium hover:bg-blue-700 transition flex items-center gap-2 disabled:opacity-50"
+        >
+          <Save size={18} /> {saving ? "Saving..." : "Save Changes"}
+        </button>
+      </div>
+
+      <div className="bg-white rounded-2xl shadow-sm border border-slate-200 p-6">
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+          <div>
+            <label className="block text-sm font-bold text-slate-700 mb-2">Years of Experience</label>
+            <input 
+              type="number" 
+              value={stats.yearsExp} 
+              onChange={e => setStats({...stats, yearsExp: parseInt(e.target.value) || 0})} 
+              className="w-full px-4 py-2 bg-slate-50 border border-slate-200 rounded-xl outline-none focus:ring-2 focus:ring-blue-500 transition" 
+            />
+          </div>
+          <div>
+            <label className="block text-sm font-bold text-slate-700 mb-2">Total Projects</label>
+            <input 
+              type="number" 
+              value={stats.projects} 
+              onChange={e => setStats({...stats, projects: parseInt(e.target.value) || 0})} 
+              className="w-full px-4 py-2 bg-slate-50 border border-slate-200 rounded-xl outline-none focus:ring-2 focus:ring-blue-500 transition" 
+            />
+          </div>
+          <div>
+            <label className="block text-sm font-bold text-slate-700 mb-2">Customer Satisfaction (%)</label>
+            <input 
+              type="number" 
+              value={stats.satisfaction} 
+              onChange={e => setStats({...stats, satisfaction: parseInt(e.target.value) || 0})} 
+              className="w-full px-4 py-2 bg-slate-50 border border-slate-200 rounded-xl outline-none focus:ring-2 focus:ring-blue-500 transition" 
+            />
+          </div>
+          <div>
+            <label className="block text-sm font-bold text-slate-700 mb-2">Support Availability</label>
+            <input 
+              type="text" 
+              value={stats.support} 
+              onChange={e => setStats({...stats, support: e.target.value})} 
+              className="w-full px-4 py-2 bg-slate-50 border border-slate-200 rounded-xl outline-none focus:ring-2 focus:ring-blue-500 transition" 
+              placeholder="e.g. 24/7 Support"
             />
           </div>
         </div>
@@ -1408,6 +1597,7 @@ function ProjectsEditor({ openConfirm }: { openConfirm: (title: string, message:
   );
 }
 
+
 function InquiriesViewer({ openConfirm }: { openConfirm: (title: string, message: string, onConfirm: () => void) => void }) {
   const [inquiries, setInquiries] = useState<any[]>([]);
 
@@ -1493,6 +1683,170 @@ function InquiriesViewer({ openConfirm }: { openConfirm: (title: string, message
           ))}
         </div>
       )}
+    </div>
+  );
+}
+
+function AdminsEditor({ openConfirm }: { openConfirm: (title: string, message: string, onConfirm: () => void) => void }) {
+  const [admins, setAdmins] = useState<any[]>([]);
+  const [newEmail, setNewEmail] = useState("");
+  const [newPassword, setNewPassword] = useState("");
+  const [loading, setLoading] = useState(false);
+
+  useEffect(() => {
+    const unsub = onSnapshot(collection(db, "admins"), (snapshot) => {
+      setAdmins(snapshot.docs.map(d => ({ id: d.id, ...d.data() })));
+    }, (error) => handleFirestoreError(error, OperationType.LIST, "admins"));
+    return () => unsub();
+  }, []);
+
+  const handleAddAdmin = async (e: FormEvent) => {
+    e.preventDefault();
+    if (!newEmail || !newPassword) {
+      toast.error("Please enter email and password");
+      return;
+    }
+    if (newPassword.length < 6) {
+      toast.error("Password must be at least 6 characters");
+      return;
+    }
+    setLoading(true);
+    try {
+      // Add to admins collection for rules check FIRST while still logged in as current admin
+      await setDoc(doc(db, "admins", newEmail), {
+        email: newEmail,
+        role: "admin",
+        createdAt: new Date().toISOString()
+      });
+
+      // Create user in Firebase Auth using a secondary app instance to avoid signing out current admin
+      const secondaryApp = getApps().find(a => a.name === "SecondaryApp") || initializeApp(firebaseConfig, "SecondaryApp");
+      const secondaryAuth = getAuth(secondaryApp);
+      
+      try {
+        await createUserWithEmailAndPassword(secondaryAuth, newEmail, newPassword);
+        await signOut(secondaryAuth); // Clean up secondary auth
+        toast.success("Admin account created successfully");
+        setNewEmail("");
+        setNewPassword("");
+      } catch (authErr: any) {
+        // If auth creation fails, we should probably remove the admin doc to keep it in sync
+        await deleteDoc(doc(db, "admins", newEmail));
+        throw authErr;
+      }
+    } catch (err: any) {
+      console.error(err);
+      toast.error("Failed to create admin: " + err.message);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleDeleteAdmin = async (email: string) => {
+    openConfirm(
+      "Remove Admin Access",
+      `Are you sure you want to remove admin access for ${email}? This will not delete their Auth account but they will lose access to this panel.`,
+      async () => {
+        try {
+          await deleteDoc(doc(db, "admins", email));
+          toast.success("Admin access removed");
+        } catch (err) {
+          handleFirestoreError(err, OperationType.DELETE, `admins/${email}`);
+          toast.error("Failed to remove admin access");
+        }
+      }
+    );
+  };
+
+  return (
+    <div className="space-y-8 max-w-4xl">
+      <div>
+        <h2 className="text-2xl font-bold text-slate-900">Manage Admin Accounts</h2>
+        <p className="text-slate-500 mt-1">Create and manage authorized admin users.</p>
+      </div>
+
+      <div className="bg-white rounded-2xl shadow-sm border border-slate-200 p-6">
+        <h3 className="text-lg font-bold text-slate-900 mb-4">Create New Admin</h3>
+        <form onSubmit={handleAddAdmin} className="grid grid-cols-1 md:grid-cols-3 gap-4 items-end">
+          <div>
+            <label className="block text-sm font-bold text-slate-700 mb-1">Email Address</label>
+            <input 
+              type="email" 
+              value={newEmail} 
+              onChange={e => setNewEmail(e.target.value)} 
+              className="w-full px-4 py-2 bg-slate-50 border border-slate-200 rounded-xl outline-none focus:ring-2 focus:ring-blue-500 transition" 
+              placeholder="admin@vmind.com"
+              required
+            />
+          </div>
+          <div>
+            <label className="block text-sm font-bold text-slate-700 mb-1">Initial Password</label>
+            <input 
+              type="password" 
+              value={newPassword} 
+              onChange={e => setNewPassword(e.target.value)} 
+              className="w-full px-4 py-2 bg-slate-50 border border-slate-200 rounded-xl outline-none focus:ring-2 focus:ring-blue-500 transition" 
+              placeholder="••••••••"
+              required
+            />
+          </div>
+          <button 
+            type="submit" 
+            disabled={loading}
+            className="bg-blue-600 text-white font-bold py-2 px-6 rounded-xl hover:bg-blue-700 transition flex items-center justify-center gap-2 disabled:opacity-50"
+          >
+            <Plus size={18} /> {loading ? "Creating..." : "Add Admin"}
+          </button>
+        </form>
+        <p className="text-xs text-slate-400 mt-4 italic">
+          * Note: New admins must use their email and the initial password you provide to sign in.
+        </p>
+      </div>
+
+      <div className="bg-white rounded-2xl shadow-sm border border-slate-200 overflow-hidden">
+        <table className="w-full text-left border-collapse">
+          <thead>
+            <tr className="bg-slate-50 border-b border-slate-200 text-slate-600 text-sm">
+              <th className="p-4 font-bold">Admin Email</th>
+              <th className="p-4 font-bold">Role</th>
+              <th className="p-4 font-bold">Created At</th>
+              <th className="p-4 font-bold">Actions</th>
+            </tr>
+          </thead>
+          <tbody>
+            {admins.map(admin => (
+              <tr key={admin.id} className="border-b border-slate-100 hover:bg-slate-50 transition">
+                <td className="p-4 font-medium text-slate-900">{admin.email}</td>
+                <td className="p-4">
+                  <span className="bg-blue-100 text-blue-700 px-2 py-1 rounded-md text-xs font-bold uppercase tracking-wider">
+                    {admin.role}
+                  </span>
+                </td>
+                <td className="p-4 text-slate-500 text-sm">
+                  {admin.createdAt ? new Date(admin.createdAt).toLocaleDateString() : 'N/A'}
+                </td>
+                <td className="p-4">
+                  {admin.email !== "manojprajapatiworks@gmail.com" && (
+                    <button 
+                      onClick={() => handleDeleteAdmin(admin.email)} 
+                      className="p-2 text-red-600 hover:bg-red-50 rounded-lg transition"
+                    >
+                      <Trash2 size={18} />
+                    </button>
+                  )}
+                </td>
+              </tr>
+            ))}
+            {admins.length === 0 && (
+              <tr>
+                <td colSpan={4} className="p-8 text-center text-slate-400 italic">
+                  No additional admins configured.
+                </td>
+              </tr>
+            )}
+          </tbody>
+        </table>
+      </div>
     </div>
   );
 }
