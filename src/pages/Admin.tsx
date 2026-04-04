@@ -6,11 +6,28 @@ import { LogOut, Plus, Edit, Trash2, Save, X, LayoutDashboard, Settings, List, M
 import { handleFirestoreError, OperationType } from "../lib/firestore-error";
 import { toast } from "sonner";
 import { motion } from "framer-motion";
+import ConfirmDialog from "../components/ConfirmDialog";
 
 export default function Admin() {
   const [user, setUser] = useState<any>(null);
   const [activeTab, setActiveTab] = useState("dashboard");
   const [loading, setLoading] = useState(true);
+  
+  const [confirmDialog, setConfirmDialog] = useState<{
+    isOpen: boolean;
+    title: string;
+    message: string;
+    onConfirm: () => void;
+  }>({
+    isOpen: false,
+    title: "",
+    message: "",
+    onConfirm: () => {}
+  });
+
+  const openConfirm = (title: string, message: string, onConfirm: () => void) => {
+    setConfirmDialog({ isOpen: true, title, message, onConfirm });
+  };
 
   useEffect(() => {
     const unsub = onAuthStateChanged(auth, (u) => {
@@ -129,13 +146,21 @@ export default function Admin() {
         {activeTab === "dashboard" && <DashboardStats setActiveTab={setActiveTab} />}
         {activeTab === "hero" && <HeroEditor />}
         {activeTab === "settings" && <SettingsEditor />}
-        {activeTab === "services" && <ServicesEditor />}
-        {activeTab === "gallery" && <GalleryEditor />}
-        {activeTab === "why-us" && <WhyUsEditor />}
-        {activeTab === "faqs" && <FaqsEditor />}
-        {activeTab === "projects" && <ProjectsEditor />}
-        {activeTab === "inquiries" && <InquiriesViewer />}
+        {activeTab === "services" && <ServicesEditor openConfirm={openConfirm} />}
+        {activeTab === "gallery" && <GalleryEditor openConfirm={openConfirm} />}
+        {activeTab === "why-us" && <WhyUsEditor openConfirm={openConfirm} />}
+        {activeTab === "faqs" && <FaqsEditor openConfirm={openConfirm} />}
+        {activeTab === "projects" && <ProjectsEditor openConfirm={openConfirm} />}
+        {activeTab === "inquiries" && <InquiriesViewer openConfirm={openConfirm} />}
       </div>
+
+      <ConfirmDialog
+        isOpen={confirmDialog.isOpen}
+        title={confirmDialog.title}
+        message={confirmDialog.message}
+        onConfirm={confirmDialog.onConfirm}
+        onCancel={() => setConfirmDialog(prev => ({ ...prev, isOpen: false }))}
+      />
     </div>
   );
 }
@@ -516,7 +541,7 @@ function SettingsEditor() {
   );
 }
 
-function GalleryEditor() {
+function GalleryEditor({ openConfirm }: { openConfirm: (title: string, message: string, onConfirm: () => void) => void }) {
   const [items, setItems] = useState<any[]>([]);
   const [editingId, setEditingId] = useState<string | null>(null);
   const [form, setForm] = useState({ title_en: "", title_th: "", imageUrl: "", category: "", order: 0 });
@@ -548,15 +573,19 @@ function GalleryEditor() {
   };
 
   const handleDelete = async (id: string) => {
-    if (window.confirm("Delete this gallery item?")) {
-      try {
-        await deleteDoc(doc(db, "gallery", id));
-        toast.success("Item deleted");
-      } catch (err) {
-        handleFirestoreError(err, OperationType.DELETE, `gallery/${id}`);
-        toast.error("Failed to delete item");
+    openConfirm(
+      "Delete Gallery Item",
+      "Are you sure you want to delete this gallery item? This action cannot be undone.",
+      async () => {
+        try {
+          await deleteDoc(doc(db, "gallery", id));
+          toast.success("Item deleted");
+        } catch (err) {
+          handleFirestoreError(err, OperationType.DELETE, `gallery/${id}`);
+          toast.error("Failed to delete item");
+        }
       }
-    }
+    );
   };
 
   return (
@@ -614,7 +643,7 @@ function GalleryEditor() {
   );
 }
 
-function WhyUsEditor() {
+function WhyUsEditor({ openConfirm }: { openConfirm: (title: string, message: string, onConfirm: () => void) => void }) {
   const [items, setItems] = useState<any[]>([]);
   const [editingId, setEditingId] = useState<string | null>(null);
   const [form, setForm] = useState({ title_en: "", title_th: "", description_en: "", description_th: "", iconName: "Zap", order: 0 });
@@ -646,15 +675,19 @@ function WhyUsEditor() {
   };
 
   const handleDelete = async (id: string) => {
-    if (window.confirm("Delete this feature?")) {
-      try {
-        await deleteDoc(doc(db, "why_us", id));
-        toast.success("Feature deleted");
-      } catch (err) {
-        handleFirestoreError(err, OperationType.DELETE, `why_us/${id}`);
-        toast.error("Failed to delete feature");
+    openConfirm(
+      "Delete Feature",
+      "Are you sure you want to delete this 'Why Choose Us' feature?",
+      async () => {
+        try {
+          await deleteDoc(doc(db, "why_us", id));
+          toast.success("Feature deleted");
+        } catch (err) {
+          handleFirestoreError(err, OperationType.DELETE, `why_us/${id}`);
+          toast.error("Failed to delete feature");
+        }
       }
-    }
+    );
   };
 
   return (
@@ -719,7 +752,7 @@ function WhyUsEditor() {
   );
 }
 
-function FaqsEditor() {
+function FaqsEditor({ openConfirm }: { openConfirm: (title: string, message: string, onConfirm: () => void) => void }) {
   const [items, setItems] = useState<any[]>([]);
   const [editingId, setEditingId] = useState<string | null>(null);
   const [form, setForm] = useState({ question_en: "", question_th: "", answer_en: "", answer_th: "", order: 0 });
@@ -751,15 +784,19 @@ function FaqsEditor() {
   };
 
   const handleDelete = async (id: string) => {
-    if (window.confirm("Delete this FAQ?")) {
-      try {
-        await deleteDoc(doc(db, "faqs", id));
-        toast.success("FAQ deleted");
-      } catch (err) {
-        handleFirestoreError(err, OperationType.DELETE, `faqs/${id}`);
-        toast.error("Failed to delete FAQ");
+    openConfirm(
+      "Delete FAQ",
+      "Are you sure you want to delete this FAQ?",
+      async () => {
+        try {
+          await deleteDoc(doc(db, "faqs", id));
+          toast.success("FAQ deleted");
+        } catch (err) {
+          handleFirestoreError(err, OperationType.DELETE, `faqs/${id}`);
+          toast.error("Failed to delete FAQ");
+        }
       }
-    }
+    );
   };
 
   return (
@@ -818,7 +855,7 @@ function FaqsEditor() {
   );
 }
 
-function ServicesEditor() {
+function ServicesEditor({ openConfirm }: { openConfirm: (title: string, message: string, onConfirm: () => void) => void }) {
   const [services, setServices] = useState<any[]>([]);
   const [editingId, setEditingId] = useState<string | null>(null);
   const [form, setForm] = useState({ 
@@ -862,15 +899,19 @@ function ServicesEditor() {
   };
 
   const handleDelete = async (id: string) => {
-    if (window.confirm("Are you sure you want to delete this service?")) {
-      try {
-        await deleteDoc(doc(db, "services", id));
-        toast.success("Service deleted");
-      } catch (err) {
-        handleFirestoreError(err, OperationType.DELETE, `services/${id}`);
-        toast.error("Failed to delete service");
+    openConfirm(
+      "Delete Service",
+      "Are you sure you want to delete this service? This will remove it from the website.",
+      async () => {
+        try {
+          await deleteDoc(doc(db, "services", id));
+          toast.success("Service deleted");
+        } catch (err) {
+          handleFirestoreError(err, OperationType.DELETE, `services/${id}`);
+          toast.error("Failed to delete service");
+        }
       }
-    }
+    );
   };
 
   const startEdit = (service: any) => {
@@ -985,7 +1026,7 @@ function ServicesEditor() {
   );
 }
 
-function ProjectsEditor() {
+function ProjectsEditor({ openConfirm }: { openConfirm: (title: string, message: string, onConfirm: () => void) => void }) {
   const [projects, setProjects] = useState<any[]>([]);
   const [editingId, setEditingId] = useState<string | null>(null);
   const [form, setForm] = useState({
@@ -1046,20 +1087,24 @@ function ProjectsEditor() {
   };
 
   const handleDelete = async (id: string) => {
-    if (window.confirm("Are you sure you want to delete this project? This action cannot be undone and will delete all associated files.")) {
-      try {
-        await deleteDoc(doc(db, "projects", id));
-        // Also delete associated files
-        const filesSnap = await getDocs(query(collection(db, "project_files"), where("projectId", "==", id)));
-        for (const fileDoc of filesSnap.docs) {
-          await deleteDoc(doc(db, "project_files", fileDoc.id));
+    openConfirm(
+      "Delete Project",
+      "Are you sure you want to delete this project? This action cannot be undone and will delete all associated files and links.",
+      async () => {
+        try {
+          await deleteDoc(doc(db, "projects", id));
+          // Also delete associated files
+          const filesSnap = await getDocs(query(collection(db, "project_files"), where("projectId", "==", id)));
+          for (const fileDoc of filesSnap.docs) {
+            await deleteDoc(doc(db, "project_files", fileDoc.id));
+          }
+          toast.success("Project and associated files deleted");
+        } catch (err) {
+          handleFirestoreError(err, OperationType.DELETE, `projects/${id}`);
+          toast.error("Failed to delete project");
         }
-        toast.success("Project and associated files deleted");
-      } catch (err) {
-        handleFirestoreError(err, OperationType.DELETE, `projects/${id}`);
-        toast.error("Failed to delete project");
       }
-    }
+    );
   };
 
   const startEdit = (project: any) => {
@@ -1134,15 +1179,19 @@ function ProjectsEditor() {
   };
 
   const handleDeleteFile = async (fileId: string) => {
-    if (window.confirm("Delete this file/link?")) {
-      try {
-        await deleteDoc(doc(db, "project_files", fileId));
-        toast.success("Deleted successfully");
-      } catch (err) {
-        handleFirestoreError(err, OperationType.DELETE, `project_files/${fileId}`);
-        toast.error("Failed to delete");
+    openConfirm(
+      "Delete File/Link",
+      "Are you sure you want to delete this file or link?",
+      async () => {
+        try {
+          await deleteDoc(doc(db, "project_files", fileId));
+          toast.success("Deleted successfully");
+        } catch (err) {
+          handleFirestoreError(err, OperationType.DELETE, `project_files/${fileId}`);
+          toast.error("Failed to delete");
+        }
       }
-    }
+    );
   };
 
   const exportToCSV = () => {
@@ -1359,7 +1408,7 @@ function ProjectsEditor() {
   );
 }
 
-function InquiriesViewer() {
+function InquiriesViewer({ openConfirm }: { openConfirm: (title: string, message: string, onConfirm: () => void) => void }) {
   const [inquiries, setInquiries] = useState<any[]>([]);
 
   useEffect(() => {
@@ -1383,15 +1432,19 @@ function InquiriesViewer() {
   };
 
   const deleteInquiry = async (id: string) => {
-    if (window.confirm("Delete this inquiry permanently?")) {
-      try {
-        await deleteDoc(doc(db, "inquiries", id));
-        toast.success("Inquiry deleted");
-      } catch (err) {
-        handleFirestoreError(err, OperationType.DELETE, `inquiries/${id}`);
-        toast.error("Failed to delete inquiry");
+    openConfirm(
+      "Delete Inquiry",
+      "Are you sure you want to delete this inquiry permanently?",
+      async () => {
+        try {
+          await deleteDoc(doc(db, "inquiries", id));
+          toast.success("Inquiry deleted");
+        } catch (err) {
+          handleFirestoreError(err, OperationType.DELETE, `inquiries/${id}`);
+          toast.error("Failed to delete inquiry");
+        }
       }
-    }
+    );
   };
 
   return (
