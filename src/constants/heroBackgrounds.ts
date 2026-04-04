@@ -65,6 +65,12 @@ export const HERO_BACKGROUNDS: HeroBackground[] = [
     name: "Steel Gray",
     className: "bg-gradient-to-b from-gray-900 to-slate-950",
     previewColor: "#111827"
+  },
+  {
+    id: "moving-dots",
+    name: "Moving Dots (Dynamic)",
+    className: "bg-slate-950",
+    previewColor: "#020617"
   }
 ];
 

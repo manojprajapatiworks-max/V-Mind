@@ -7,6 +7,7 @@ import { db } from "../firebase";
 import { handleFirestoreError, OperationType } from "../lib/firestore-error";
 import { useLanguage } from "../contexts/LanguageContext";
 import { getHeroBackground } from "../constants/heroBackgrounds";
+import HeroParticles from "../components/HeroParticles";
 
 const iconMap: Record<string, any> = {
   Zap, ShieldCheck, Network, PhoneCall, MessageCircle, Star, ChevronDown, ChevronUp, BarChart3, Info, Globe, Shield: ShieldCheck, Flash: Zap
@@ -90,6 +91,8 @@ export default function Home() {
     <div className="flex flex-col min-h-screen">
       {/* Hero Section */}
       <section className={`relative text-white overflow-hidden py-32 md:py-48 flex items-center justify-center min-h-[90vh] ${heroBg.className}`}>
+        {hero.backgroundId === "moving-dots" && <HeroParticles />}
+        
         {/* Abstract Background Elements */}
         <div className="absolute inset-0 overflow-hidden pointer-events-none">
           <div className="absolute -top-[20%] -right-[10%] w-[70%] h-[70%] rounded-full bg-gradient-to-b from-blue-600/30 to-cyan-500/10 blur-[120px]" />
