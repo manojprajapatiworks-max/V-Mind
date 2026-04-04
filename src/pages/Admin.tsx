@@ -1,10 +1,10 @@
 import React, { useState, useEffect, FormEvent } from "react";
 import { initializeApp, getApps } from "firebase/app";
-import { getAuth, signInWithPopup, signOut, onAuthStateChanged, signInWithEmailAndPassword, createUserWithEmailAndPassword } from "firebase/auth";
+import { getAuth, signOut, onAuthStateChanged, signInWithEmailAndPassword, createUserWithEmailAndPassword } from "firebase/auth";
 import { doc, setDoc, onSnapshot, collection, addDoc, updateDoc, deleteDoc, query, orderBy, where, getDocs, getDoc } from "firebase/firestore";
-import { auth, db, googleProvider } from "../firebase";
+import { auth, db } from "../firebase";
 import firebaseConfig from "../../firebase-applet-config.json";
-import { LogOut, Plus, Edit, Trash2, Save, X, LayoutDashboard, Settings, List, MessageSquare, FolderKanban, FileUp, Link as LinkIcon, Image as ImageIcon, CheckCircle, BarChart3, Download, Globe, HelpCircle, Info, Zap, Briefcase, ShieldCheck, Users, TrendingUp, Lock, Mail } from "lucide-react";
+import { LogOut, Plus, Edit, Trash2, Save, X, LayoutDashboard, Settings, List, MessageSquare, FolderKanban, FileUp, Link as LinkIcon, Image as ImageIcon, CheckCircle, BarChart3, Download, HelpCircle, Info, Zap, Briefcase, ShieldCheck, Users, TrendingUp, Lock, Mail, History } from "lucide-react";
 import { handleFirestoreError, OperationType } from "../lib/firestore-error";
 import { toast } from "sonner";
 import { motion } from "framer-motion";
@@ -66,16 +66,6 @@ export default function Admin() {
     return () => unsub();
   }, []);
 
-  const handleLogin = async () => {
-    try {
-      await signInWithPopup(auth, googleProvider);
-      toast.success("Logged in successfully");
-    } catch (err) {
-      console.error(err);
-      toast.error("Login failed");
-    }
-  };
-
   const handleEmailLogin = async (e: FormEvent) => {
     e.preventDefault();
     if (!loginEmail || !loginPassword) {
@@ -85,11 +75,29 @@ export default function Admin() {
     const email = loginEmail.trim().toLowerCase();
     setIsLoggingIn(true);
     try {
-      await signInWithEmailAndPassword(auth, email, loginPassword);
+      const userCredential = await signInWithEmailAndPassword(auth, email, loginPassword);
+      const u = userCredential.user;
+      
+      // Log successful login
+      try {
+        const now = new Date();
+        await addDoc(collection(db, "login_logs"), {
+          email: u.email,
+          timestamp: now.toISOString(),
+          date: now.toLocaleDateString(),
+          time: now.toLocaleTimeString(),
+          userAgent: navigator.userAgent
+        });
+      } catch (logErr) {
+        console.error("Error logging login:", logErr);
+      }
+      
       toast.success("Logged in successfully");
     } catch (err: any) {
       console.error(err);
-      if (err.code === 'auth/user-not-found' || err.code === 'auth/wrong-password' || err.code === 'auth/invalid-credential') {
+      if (err.code === 'auth/operation-not-allowed') {
+        toast.error("Email/Password login is not enabled in Firebase Console. Please enable it in Authentication > Sign-in method.");
+      } else if (err.code === 'auth/user-not-found' || err.code === 'auth/wrong-password' || err.code === 'auth/invalid-credential') {
         toast.error("Invalid email or password");
       } else {
         toast.error("Login failed: " + err.message);
@@ -172,18 +180,6 @@ export default function Admin() {
               {isLoggingIn ? "Signing in..." : "Sign In"}
             </button>
           </form>
-
-          <div className="relative mb-6">
-            <div className="absolute inset-0 flex items-center"><div className="w-full border-t border-slate-200"></div></div>
-            <div className="relative flex justify-center text-sm"><span className="px-2 bg-white text-slate-500">Or continue with</span></div>
-          </div>
-
-          <button
-            onClick={handleLogin}
-            className="w-full bg-white border border-slate-200 text-slate-700 font-bold py-3 px-4 rounded-xl hover:bg-slate-50 transition flex items-center justify-center gap-2"
-          >
-            <Globe size={18} /> Sign in with Google
-          </button>
         </div>
       </div>
     );
@@ -219,6 +215,7 @@ export default function Admin() {
       items: [
         { id: "settings", label: "Site Settings", icon: Settings },
         { id: "admins", label: "Manage Admins", icon: Users },
+        { id: "logs", label: "Login History", icon: History },
       ]
     }
   ];
@@ -274,6 +271,7 @@ export default function Admin() {
         {activeTab === "projects" && <ProjectsEditor openConfirm={openConfirm} />}
         {activeTab === "inquiries" && <InquiriesViewer openConfirm={openConfirm} />}
         {activeTab === "admins" && <AdminsEditor openConfirm={openConfirm} />}
+        {activeTab === "logs" && <LoginLogsViewer />}
       </div>
 
       <ConfirmDialog
@@ -1726,6 +1724,107 @@ function InquiriesViewer({ openConfirm }: { openConfirm: (title: string, message
   );
 }
 
+function LoginLogsViewer() {
+  const [logs, setLogs] = useState<any[]>([]);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    const q = query(collection(db, "login_logs"), orderBy("timestamp", "desc"));
+    const unsub = onSnapshot(q, (snapshot) => {
+      setLogs(snapshot.docs.map(d => ({ id: d.id, ...d.data() })));
+      setLoading(false);
+    }, (error) => handleFirestoreError(error, OperationType.LIST, "login_logs"));
+    return () => unsub();
+  }, []);
+
+  const exportToCSV = () => {
+    if (logs.length === 0) {
+      toast.error("No logs to export");
+      return;
+    }
+
+    const headers = ["Email", "Date", "Time", "Timestamp", "User Agent"];
+    const rows = logs.map(log => [
+      log.email,
+      log.date,
+      log.time,
+      log.timestamp,
+      `"${log.userAgent?.replace(/"/g, '""')}"`
+    ]);
+
+    const csvContent = [
+      headers.join(","),
+      ...rows.map(row => row.join(","))
+    ].join("\n");
+
+    const blob = new Blob([csvContent], { type: "text/csv;charset=utf-8;" });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement("a");
+    link.setAttribute("href", url);
+    link.setAttribute("download", `login_logs_${new Date().toISOString().split('T')[0]}.csv`);
+    link.style.visibility = "hidden";
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+    toast.success("Logs exported successfully");
+  };
+
+  if (loading) return <div className="flex justify-center p-12"><div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div></div>;
+
+  return (
+    <div className="space-y-8">
+      <div className="flex justify-between items-end">
+        <div>
+          <h2 className="text-2xl font-bold text-slate-900">Login History</h2>
+          <p className="text-slate-500 mt-1">Track admin sign-in activities.</p>
+        </div>
+        <button
+          onClick={exportToCSV}
+          className="flex items-center gap-2 bg-blue-600 text-white px-4 py-2 rounded-xl hover:bg-blue-700 transition shadow-lg shadow-blue-600/20 text-sm font-bold"
+        >
+          <Download size={18} /> Export CSV
+        </button>
+      </div>
+
+      <div className="bg-white rounded-2xl shadow-sm border border-slate-200 overflow-hidden">
+        <div className="overflow-x-auto">
+          <table className="w-full text-left border-collapse">
+            <thead>
+              <tr className="bg-slate-50 border-b border-slate-200">
+                <th className="p-4 text-xs font-bold text-slate-500 uppercase tracking-wider">Admin Email</th>
+                <th className="p-4 text-xs font-bold text-slate-500 uppercase tracking-wider">Date</th>
+                <th className="p-4 text-xs font-bold text-slate-500 uppercase tracking-wider">Time</th>
+                <th className="p-4 text-xs font-bold text-slate-500 uppercase tracking-wider">User Agent</th>
+              </tr>
+            </thead>
+            <tbody className="divide-y divide-slate-100">
+              {logs.map((log) => (
+                <tr key={log.id} className="hover:bg-slate-50 transition">
+                  <td className="p-4">
+                    <div className="font-medium text-slate-900">{log.email}</div>
+                  </td>
+                  <td className="p-4 text-slate-600 text-sm">{log.date}</td>
+                  <td className="p-4 text-slate-600 text-sm">{log.time}</td>
+                  <td className="p-4 text-slate-400 text-xs truncate max-w-[300px]" title={log.userAgent}>
+                    {log.userAgent}
+                  </td>
+                </tr>
+              ))}
+              {logs.length === 0 && (
+                <tr>
+                  <td colSpan={4} className="p-8 text-center text-slate-400 italic">
+                    No login logs found.
+                  </td>
+                </tr>
+              )}
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+  );
+}
+
 function AdminsEditor({ openConfirm }: { openConfirm: (title: string, message: string, onConfirm: () => void) => void }) {
   const [admins, setAdmins] = useState<any[]>([]);
   const [newEmail, setNewEmail] = useState("");
@@ -1776,7 +1875,11 @@ function AdminsEditor({ openConfirm }: { openConfirm: (title: string, message: s
       }
     } catch (err: any) {
       console.error(err);
-      toast.error("Failed to create admin: " + err.message);
+      if (err.code === 'auth/operation-not-allowed') {
+        toast.error("Email/Password authentication is not enabled in Firebase Console. Please enable it in Authentication > Sign-in method.");
+      } else {
+        toast.error("Failed to create admin: " + err.message);
+      }
     } finally {
       setLoading(false);
     }

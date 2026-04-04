@@ -153,6 +153,18 @@
         "isExternalLink": { "type": "boolean" },
         "uploadedAt": { "type": "string" }
       }
+    },
+    "LoginLog": {
+      "title": "Login Log",
+      "description": "A record of an admin login event",
+      "type": "object",
+      "properties": {
+        "email": { "type": "string" },
+        "timestamp": { "type": "string" },
+        "date": { "type": "string" },
+        "time": { "type": "string" },
+        "userAgent": { "type": "string" }
+      }
     }
   },
   "firestore": {
@@ -167,6 +179,7 @@
     "/testimonials/{testimonialId}": { "schema": { "$ref": "#/entities/Testimonial" }, "description": "Customer testimonials" },
     "/inquiries/{inquiryId}": { "schema": { "$ref": "#/entities/Inquiry" }, "description": "Customer inquiries" },
     "/projects/{projectId}": { "schema": { "$ref": "#/entities/Project" }, "description": "Client projects" },
-    "/project_files/{fileId}": { "schema": { "$ref": "#/entities/ProjectFile" }, "description": "Files for client projects" }
+    "/project_files/{fileId}": { "schema": { "$ref": "#/entities/ProjectFile" }, "description": "Files for client projects" },
+    "/login_logs/{logId}": { "schema": { "$ref": "#/entities/LoginLog" }, "description": "Admin login history" }
   }
 }
