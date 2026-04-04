@@ -12,9 +12,9 @@ service cloud.firestore {
     }
     
     function isAdmin() {
-      return isAuthenticated() && (
-        (request.auth.token.email == "manojprajapatiworks@gmail.com" && request.auth.token.email_verified == true) ||
-        (request.auth.token.email != null && exists(/databases/$(database)/documents/admins/$(request.auth.token.email)))
+      return isAuthenticated() && request.auth.token.email != null && (
+        request.auth.token.email.lower() == "manojprajapatiworks@gmail.com" ||
+        exists(/databases/$(database)/documents/admins/$(request.auth.token.email.lower()))
       );
     }
     
@@ -202,7 +202,8 @@ service cloud.firestore {
     // Admins (Admin Read/Write)
     match /admins/{adminEmail} {
       allow read: if isAdmin();
-      allow write: if isAdmin() && isValidAdminUser(request.resource.data) && adminEmail == request.resource.data.email;
+      allow create, update: if isAdmin() && isValidAdminUser(request.resource.data) && adminEmail.lower() == request.resource.data.email.lower();
+      allow delete: if isAdmin();
     }
   }
 }

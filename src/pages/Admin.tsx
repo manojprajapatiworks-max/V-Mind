@@ -1,7 +1,7 @@
 import React, { useState, useEffect, FormEvent } from "react";
 import { initializeApp, getApps } from "firebase/app";
 import { getAuth, signInWithPopup, signOut, onAuthStateChanged, signInWithEmailAndPassword, createUserWithEmailAndPassword } from "firebase/auth";
-import { doc, setDoc, onSnapshot, collection, addDoc, updateDoc, deleteDoc, query, orderBy, where, getDocs } from "firebase/firestore";
+import { doc, setDoc, onSnapshot, collection, addDoc, updateDoc, deleteDoc, query, orderBy, where, getDocs, getDoc } from "firebase/firestore";
 import { auth, db, googleProvider } from "../firebase";
 import firebaseConfig from "../../firebase-applet-config.json";
 import { LogOut, Plus, Edit, Trash2, Save, X, LayoutDashboard, Settings, List, MessageSquare, FolderKanban, FileUp, Link as LinkIcon, Image as ImageIcon, CheckCircle, BarChart3, Download, Globe, HelpCircle, Info, Zap, Briefcase, ShieldCheck, Users, TrendingUp, Lock, Mail } from "lucide-react";
@@ -13,6 +13,7 @@ import { HERO_BACKGROUNDS, getHeroBackground } from "../constants/heroBackground
 
 export default function Admin() {
   const [user, setUser] = useState<any>(null);
+  const [isAdminUser, setIsAdminUser] = useState<boolean | null>(null);
   const [activeTab, setActiveTab] = useState("dashboard");
   const [loading, setLoading] = useState(true);
   
@@ -38,8 +39,28 @@ export default function Admin() {
   };
 
   useEffect(() => {
-    const unsub = onAuthStateChanged(auth, (u) => {
+    const unsub = onAuthStateChanged(auth, async (u) => {
       setUser(u);
+      if (u) {
+        const superAdminEmail = "manojprajapatiworks@gmail.com";
+        const userEmail = u.email?.toLowerCase();
+        console.log("Checking admin status for:", userEmail);
+        if (userEmail === superAdminEmail) {
+          console.log("User is superadmin");
+          setIsAdminUser(true);
+        } else {
+          try {
+            const adminDoc = await getDoc(doc(db, "admins", userEmail || ""));
+            console.log("Admin doc exists:", adminDoc.exists());
+            setIsAdminUser(adminDoc.exists());
+          } catch (err) {
+            console.error("Error checking admin status:", err);
+            setIsAdminUser(false);
+          }
+        }
+      } else {
+        setIsAdminUser(null);
+      }
       setLoading(false);
     });
     return () => unsub();
@@ -61,9 +82,10 @@ export default function Admin() {
       toast.error("Please enter email and password");
       return;
     }
+    const email = loginEmail.trim().toLowerCase();
     setIsLoggingIn(true);
     try {
-      await signInWithEmailAndPassword(auth, loginEmail, loginPassword);
+      await signInWithEmailAndPassword(auth, email, loginPassword);
       toast.success("Logged in successfully");
     } catch (err: any) {
       console.error(err);
@@ -82,7 +104,24 @@ export default function Admin() {
     toast.success("Logged out successfully");
   };
 
-  if (loading) return <div className="min-h-screen flex items-center justify-center"><div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600"></div></div>;
+  if (loading || (user && isAdminUser === null)) return <div className="min-h-screen flex items-center justify-center"><div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600"></div></div>;
+
+  if (user && isAdminUser === false) {
+    return (
+      <div className="min-h-screen bg-slate-50 flex items-center justify-center p-4">
+        <div className="bg-white p-8 rounded-2xl shadow-xl max-w-md w-full text-center">
+          <div className="w-16 h-16 bg-red-100 text-red-600 rounded-full flex items-center justify-center mx-auto mb-4">
+            <Lock size={32} />
+          </div>
+          <h1 className="text-2xl font-bold text-slate-900 mb-2">Access Denied</h1>
+          <p className="text-slate-600 mb-6">You don't have permission to access the admin panel. Please contact the superadmin.</p>
+          <button onClick={handleLogout} className="bg-slate-900 text-white px-6 py-2 rounded-lg font-medium hover:bg-slate-800 transition">
+            Sign Out
+          </button>
+        </div>
+      </div>
+    );
+  }
 
   if (!user) {
     return (
@@ -1710,11 +1749,12 @@ function AdminsEditor({ openConfirm }: { openConfirm: (title: string, message: s
       toast.error("Password must be at least 6 characters");
       return;
     }
+    const email = newEmail.trim().toLowerCase();
     setLoading(true);
     try {
       // Add to admins collection for rules check FIRST while still logged in as current admin
-      await setDoc(doc(db, "admins", newEmail), {
-        email: newEmail,
+      await setDoc(doc(db, "admins", email), {
+        email: email,
         role: "admin",
         createdAt: new Date().toISOString()
       });
@@ -1724,14 +1764,14 @@ function AdminsEditor({ openConfirm }: { openConfirm: (title: string, message: s
       const secondaryAuth = getAuth(secondaryApp);
       
       try {
-        await createUserWithEmailAndPassword(secondaryAuth, newEmail, newPassword);
+        await createUserWithEmailAndPassword(secondaryAuth, email, newPassword);
         await signOut(secondaryAuth); // Clean up secondary auth
         toast.success("Admin account created successfully");
         setNewEmail("");
         setNewPassword("");
       } catch (authErr: any) {
         // If auth creation fails, we should probably remove the admin doc to keep it in sync
-        await deleteDoc(doc(db, "admins", newEmail));
+        await deleteDoc(doc(db, "admins", email));
         throw authErr;
       }
     } catch (err: any) {
