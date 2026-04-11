@@ -4,6 +4,7 @@ import { collection, onSnapshot, query, orderBy } from "firebase/firestore";
 import { db } from "../firebase";
 import { handleFirestoreError, OperationType } from "../lib/firestore-error";
 import { useLanguage } from "../contexts/LanguageContext";
+import { getDirectImageUrl } from "../lib/utils";
 
 export default function Projects() {
   const { language } = useLanguage();
@@ -55,7 +56,7 @@ export default function Projects() {
               className="group relative aspect-[4/3] rounded-3xl overflow-hidden shadow-lg bg-white"
             >
               <img 
-                src={item.imageUrl} 
+                src={getDirectImageUrl(item.imageUrl)} 
                 alt={item.title_en} 
                 className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-110" 
                 referrerPolicy="no-referrer"

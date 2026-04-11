@@ -7,12 +7,14 @@ import { db } from "../firebase";
 import { handleFirestoreError, OperationType } from "../lib/firestore-error";
 import { Toaster } from "sonner";
 import { useLanguage } from "../contexts/LanguageContext";
+import { getDirectImageUrl } from "../lib/utils";
 
 export default function Layout() {
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const [scrolled, setScrolled] = useState(false);
   const location = useLocation();
   const [settings, setSettings] = useState<any>({});
+  const [loading, setLoading] = useState(true);
   const { language, setLanguage } = useLanguage();
 
   useEffect(() => {
@@ -28,8 +30,10 @@ export default function Layout() {
       if (doc.exists()) {
         setSettings(doc.data());
       }
+      setLoading(false);
     }, (error) => {
       handleFirestoreError(error, OperationType.GET, "settings/global");
+      setLoading(false);
     });
     return () => unsub();
   }, []);
@@ -45,6 +49,32 @@ export default function Layout() {
     <div className="min-h-screen flex flex-col bg-slate-50 font-sans text-slate-900 selection:bg-cyan-500/30">
       <Toaster position="top-right" richColors />
       
+      <AnimatePresence>
+        {loading && (
+          <motion.div
+            initial={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            transition={{ duration: 0.5 }}
+            className="fixed inset-0 z-[100] bg-slate-950 flex flex-col items-center justify-center"
+          >
+            <div className="relative">
+              <div className="w-20 h-20 border-2 border-cyan-500/20 rounded-full animate-[spin_3s_linear_infinite]"></div>
+              <div className="absolute inset-0 flex items-center justify-center">
+                <Zap size={32} className="text-cyan-400 animate-pulse fill-current" />
+              </div>
+            </div>
+            <motion.div 
+              initial={{ opacity: 0, y: 10 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ delay: 0.2 }}
+              className="mt-6 text-slate-400 font-display font-medium tracking-widest text-xs uppercase"
+            >
+              Loading Excellence
+            </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+
       {/* Top Bar */}
       <div className="bg-slate-950 text-slate-300 text-xs py-2 px-4 hidden md:block border-b border-white/10">
         <div className="max-w-7xl mx-auto flex justify-between items-center">
@@ -88,7 +118,7 @@ export default function Layout() {
             {/* Logo */}
             <Link to="/" className="flex items-center gap-3 group">
               {settings.logoUrl ? (
-                <img src={settings.logoUrl} alt="Logo" className="h-10 w-auto object-contain" referrerPolicy="no-referrer" />
+                <img src={getDirectImageUrl(settings.logoUrl)} alt="Logo" className="h-10 w-auto object-contain" referrerPolicy="no-referrer" />
               ) : (
                 <div className="bg-gradient-to-br from-blue-600 to-cyan-500 text-white p-2.5 rounded-xl shadow-lg shadow-cyan-500/20 group-hover:shadow-cyan-500/40 transition-all">
                   <Zap size={24} className="fill-current" />

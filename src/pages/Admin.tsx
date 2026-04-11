@@ -7,9 +7,10 @@ import firebaseConfig from "../../firebase-applet-config.json";
 import { LogOut, Plus, Edit, Trash2, Save, X, LayoutDashboard, Settings, List, MessageSquare, FolderKanban, FileUp, Link as LinkIcon, Image as ImageIcon, CheckCircle, BarChart3, Download, HelpCircle, Info, Zap, Briefcase, ShieldCheck, Users, TrendingUp, Lock, Mail, History } from "lucide-react";
 import { handleFirestoreError, OperationType } from "../lib/firestore-error";
 import { toast } from "sonner";
-import { motion } from "framer-motion";
+import { motion, AnimatePresence } from "framer-motion";
 import ConfirmDialog from "../components/ConfirmDialog";
 import { HERO_BACKGROUNDS, getHeroBackground } from "../constants/heroBackgrounds";
+import { getDirectImageUrl } from "../lib/utils";
 
 export default function Admin() {
   const [user, setUser] = useState<any>(null);
@@ -715,6 +716,11 @@ function SettingsEditor() {
               className="w-full px-3 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none"
               placeholder="https://example.com/logo.png"
             />
+            {settings.logoUrl && (
+              <div className="mt-2 p-2 border border-slate-200 rounded-lg bg-slate-50 inline-block">
+                <img src={getDirectImageUrl(settings.logoUrl)} alt="Logo Preview" className="h-12 w-auto object-contain" referrerPolicy="no-referrer" />
+              </div>
+            )}
           </div>
           <div>
             <label className="block text-sm font-medium text-slate-700 mb-1">Phone Number</label>
@@ -830,6 +836,11 @@ function GalleryEditor({ openConfirm }: { openConfirm: (title: string, message: 
           <div className="md:col-span-2">
             <label className="block text-sm font-medium text-slate-700 mb-1">Image URL</label>
             <input required type="url" value={form.imageUrl} onChange={e => setForm({...form, imageUrl: e.target.value})} className="w-full px-3 py-2 border border-slate-300 rounded-lg outline-none focus:ring-2 focus:ring-blue-500" />
+            {form.imageUrl && (
+              <div className="mt-2 aspect-video w-32 rounded-lg overflow-hidden border border-slate-200">
+                <img src={getDirectImageUrl(form.imageUrl)} alt="Preview" className="w-full h-full object-cover" referrerPolicy="no-referrer" />
+              </div>
+            )}
           </div>
           <div>
             <label className="block text-sm font-medium text-slate-700 mb-1">Category</label>
@@ -852,7 +863,7 @@ function GalleryEditor({ openConfirm }: { openConfirm: (title: string, message: 
         {items.map(item => (
           <div key={item.id} className="bg-white rounded-2xl shadow-sm border border-slate-200 overflow-hidden group">
             <div className="aspect-video relative overflow-hidden">
-              <img src={item.imageUrl} alt={item.title_en} className="w-full h-full object-cover transition-transform group-hover:scale-105" referrerPolicy="no-referrer" />
+              <img src={getDirectImageUrl(item.imageUrl)} alt={item.title_en} className="w-full h-full object-cover transition-transform group-hover:scale-105" referrerPolicy="no-referrer" />
               <div className="absolute top-2 right-2 flex gap-1">
                 <button onClick={() => { setEditingId(item.id); setForm({...item}); }} className="p-2 bg-white/90 text-blue-600 rounded-lg shadow-sm hover:bg-white transition"><Edit size={16}/></button>
                 <button onClick={() => handleDelete(item.id)} className="p-2 bg-white/90 text-red-600 rounded-lg shadow-sm hover:bg-white transition"><Trash2 size={16}/></button>

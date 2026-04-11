@@ -7,6 +7,7 @@ import { db } from "../firebase";
 import { handleFirestoreError, OperationType } from "../lib/firestore-error";
 import { useLanguage } from "../contexts/LanguageContext";
 import { getHeroBackground } from "../constants/heroBackgrounds";
+import { getDirectImageUrl } from "../lib/utils";
 import HeroParticles from "../components/HeroParticles";
 import HeroOrbs from "../components/HeroOrbs";
 
@@ -26,6 +27,7 @@ export default function Home() {
   const [whyUs, setWhyUs] = useState<any[]>([]);
   const [testimonials, setTestimonials] = useState<any[]>([]);
   const [faqs, setFaqs] = useState<any[]>([]);
+  const [loading, setLoading] = useState(true);
   const [openFaq, setOpenFaq] = useState<string | null>(null);
 
   useEffect(() => {
@@ -35,7 +37,11 @@ export default function Home() {
 
     const unsubHero = onSnapshot(doc(db, "settings", "hero"), (doc) => {
       if (doc.exists()) setHero(doc.data());
-    }, (error) => handleFirestoreError(error, OperationType.GET, "settings/hero"));
+      setLoading(false);
+    }, (error) => {
+      handleFirestoreError(error, OperationType.GET, "settings/hero");
+      setLoading(false);
+    });
 
     const unsubStats = onSnapshot(doc(db, "settings", "stats"), (doc) => {
       if (doc.exists()) setStats(doc.data());
@@ -87,6 +93,8 @@ export default function Home() {
   const heroSubtitle = language === 'en' ? (hero.subtitle_en || settings.heroSubtitle || defaultHeroSubtitle) : (hero.subtitle_th || defaultHeroSubtitle);
 
   const heroBg = getHeroBackground(hero.backgroundId || "modern-slate");
+
+  if (loading) return null; // Let Layout handle the main loading screen
 
   return (
     <div className="flex flex-col min-h-screen">
@@ -245,7 +253,7 @@ export default function Home() {
                 className="group relative aspect-[4/3] rounded-3xl overflow-hidden shadow-lg"
               >
                 <img 
-                  src={item.imageUrl} 
+                  src={getDirectImageUrl(item.imageUrl)} 
                   alt={item.title_en} 
                   className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-110" 
                   referrerPolicy="no-referrer"
