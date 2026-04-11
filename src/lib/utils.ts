@@ -13,8 +13,10 @@ export function getDirectImageUrl(url: string): string {
   // https://drive.google.com/file/d/FILE_ID/view
   // https://drive.google.com/open?id=FILE_ID
   // https://drive.google.com/uc?id=FILE_ID
-  const driveMatch = url.match(/\/(?:d|file\/d|open\?id=|uc\?id=)([\w-]{25,})[\/\?]?/);
+  // https://docs.google.com/file/d/FILE_ID/edit
+  const driveMatch = url.match(/(?:drive\.google\.com|docs\.google\.com)\/(?:file\/d\/|open\?id=|uc\?id=|file\/d\/)([\w-]{25,})/);
   if (driveMatch && driveMatch[1]) {
+    // Using the most reliable direct link format
     return `https://drive.google.com/uc?export=view&id=${driveMatch[1]}`;
   }
   

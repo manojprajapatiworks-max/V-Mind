@@ -22,6 +22,7 @@ export default function Admin() {
   const [loginEmail, setLoginEmail] = useState("");
   const [loginPassword, setLoginPassword] = useState("");
   const [isLoggingIn, setIsLoggingIn] = useState(false);
+  const [globalSettings, setGlobalSettings] = useState<any>({});
   
   const [confirmDialog, setConfirmDialog] = useState<{
     isOpen: boolean;
@@ -63,6 +64,15 @@ export default function Admin() {
         setIsAdminUser(null);
       }
       setLoading(false);
+    });
+    return () => unsub();
+  }, []);
+
+  useEffect(() => {
+    const unsub = onSnapshot(doc(db, "settings", "global"), (doc) => {
+      if (doc.exists()) setGlobalSettings(doc.data());
+    }, (error) => {
+      handleFirestoreError(error, OperationType.GET, "settings/global");
     });
     return () => unsub();
   }, []);
@@ -137,11 +147,17 @@ export default function Admin() {
       <div className="min-h-screen bg-slate-50 flex items-center justify-center p-4">
         <div className="bg-white p-8 rounded-2xl shadow-xl max-w-md w-full">
           <div className="text-center mb-8">
-            <div className="inline-flex p-3 bg-blue-100 text-blue-600 rounded-2xl mb-4">
-              <Lock size={32} />
+            <div className="inline-flex mb-4">
+              {globalSettings.logoUrl ? (
+                <img src={getDirectImageUrl(globalSettings.logoUrl)} alt="Logo" className="h-16 w-auto object-contain" referrerPolicy="no-referrer" />
+              ) : (
+                <div className="p-3 bg-blue-100 text-blue-600 rounded-2xl">
+                  <Lock size={32} />
+                </div>
+              )}
             </div>
             <h1 className="text-2xl font-bold text-slate-900">Admin Login</h1>
-            <p className="text-slate-500">Sign in to manage V Mind content.</p>
+            <p className="text-slate-500">Sign in to manage {globalSettings.companyName || "V Mind"} content.</p>
           </div>
 
           <form onSubmit={handleEmailLogin} className="space-y-4 mb-6">

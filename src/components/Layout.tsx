@@ -226,10 +226,16 @@ export default function Layout() {
           <div className="grid grid-cols-1 md:grid-cols-12 gap-12 lg:gap-8 mb-16">
             <div className="md:col-span-5 lg:col-span-4">
               <Link to="/" className="flex items-center gap-3 mb-6">
-                <div className="bg-gradient-to-br from-blue-500 to-cyan-400 text-white p-2 rounded-lg">
-                  <Zap size={24} className="fill-current" />
-                </div>
-                <span className="text-2xl font-display font-bold text-white tracking-tight">V Mind</span>
+                {settings.logoUrl ? (
+                  <img src={getDirectImageUrl(settings.logoUrl)} alt="Logo" className="h-10 w-auto object-contain brightness-0 invert" referrerPolicy="no-referrer" />
+                ) : (
+                  <div className="bg-gradient-to-br from-blue-500 to-cyan-400 text-white p-2 rounded-lg">
+                    <Zap size={24} className="fill-current" />
+                  </div>
+                )}
+                <span className="text-2xl font-display font-bold text-white tracking-tight">
+                  {settings.companyName || "V Mind"}
+                </span>
               </Link>
               <p className="text-slate-400 leading-relaxed mb-8">
                 {settings.aboutText || "Professional electrical, security, and networking solutions for modern businesses and homes. Engineering excellence in every connection."}

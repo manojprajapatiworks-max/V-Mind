@@ -381,39 +381,66 @@ export default function Home() {
       )}
 
       {/* CTA Section */}
-      <section className="py-24 relative overflow-hidden bg-blue-600">
-        <div className="absolute inset-0 bg-[url('https://grainy-gradients.vercel.app/noise.svg')] opacity-20 mix-blend-overlay"></div>
-        <div className="absolute top-0 right-0 w-[800px] h-[800px] bg-cyan-400/30 rounded-full blur-[100px] -mr-96 -mt-96 pointer-events-none" />
+      <section className="py-24 relative overflow-hidden">
+        {/* Modern Mesh Gradient Background */}
+        <div className="absolute inset-0 bg-slate-950">
+          <div className="absolute top-0 left-0 w-full h-full bg-gradient-to-br from-blue-600/20 via-transparent to-purple-600/20" />
+          <div className="absolute -top-[20%] -right-[10%] w-[60%] h-[60%] rounded-full bg-cyan-500/20 blur-[120px] animate-pulse" />
+          <div className="absolute -bottom-[20%] -left-[10%] w-[60%] h-[60%] rounded-full bg-blue-600/20 blur-[120px]" />
+          <div className="absolute inset-0 bg-[url('https://grainy-gradients.vercel.app/noise.svg')] opacity-30 mix-blend-overlay"></div>
+        </div>
         
-        <div className="max-w-4xl mx-auto px-4 text-center relative z-10">
-          <h2 className="text-4xl md:text-5xl font-display font-bold text-white mb-6">Ready to upgrade your infrastructure?</h2>
-          <p className="text-xl text-blue-100 mb-10 font-light">
-            Get in touch with our team today for a consultation and quote. We respond quickly and professionally.
-          </p>
-          
-          <div className="flex flex-col sm:flex-row justify-center gap-6">
-            {settings.phoneNumber && (
-              <a
-                href={`tel:${settings.phoneNumber}`}
-                className="flex items-center justify-center gap-3 bg-white text-blue-600 px-8 py-4 rounded-full font-bold hover:bg-blue-50 transition-all shadow-xl shadow-black/10"
-              >
-                <PhoneCall size={24} />
-                Call {settings.phoneNumber}
-              </a>
-            )}
+        <div className="max-w-5xl mx-auto px-4 relative z-10">
+          <motion.div 
+            initial={{ opacity: 0, y: 30 }}
+            whileInView={{ opacity: 1, y: 0 }}
+            viewport={{ once: true }}
+            className="glass-dark p-12 md:p-20 rounded-[40px] border border-white/10 text-center relative overflow-hidden"
+          >
+            {/* Decorative inner glow */}
+            <div className="absolute top-0 left-1/2 -translate-x-1/2 w-full h-px bg-gradient-to-r from-transparent via-cyan-400/50 to-transparent" />
             
-            {settings.lineId && (
-              <a
-                href={`https://line.me/ti/p/~${settings.lineId}`}
-                target="_blank"
-                rel="noopener noreferrer"
-                className="flex items-center justify-center gap-3 bg-[#00B900] text-white px-8 py-4 rounded-full font-bold hover:bg-[#009900] transition-all shadow-xl shadow-[#00B900]/20"
-              >
-                <MessageCircle size={24} />
-                LINE: {settings.lineId}
-              </a>
-            )}
-          </div>
+            <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-blue-500/10 border border-blue-500/20 text-blue-400 text-sm font-bold uppercase tracking-widest mb-8">
+              <Zap size={16} className="fill-current" />
+              Take the next step
+            </div>
+            
+            <h2 className="text-4xl md:text-6xl font-display font-bold text-white mb-8 leading-tight">
+              Ready to upgrade your <span className="text-transparent bg-clip-text bg-gradient-to-r from-cyan-400 to-blue-500">infrastructure?</span>
+            </h2>
+            
+            <p className="text-xl text-slate-400 mb-12 max-w-2xl mx-auto font-light leading-relaxed">
+              Get in touch with our team today for a consultation and quote. We respond quickly and professionally to all inquiries.
+            </p>
+            
+            <div className="flex flex-col sm:flex-row justify-center gap-6">
+              {settings.phoneNumber && (
+                <motion.a
+                  whileHover={{ scale: 1.05 }}
+                  whileTap={{ scale: 0.95 }}
+                  href={`tel:${settings.phoneNumber}`}
+                  className="flex items-center justify-center gap-3 bg-white text-slate-950 px-10 py-5 rounded-2xl font-bold hover:bg-blue-50 transition-all shadow-2xl shadow-blue-500/20 group"
+                >
+                  <PhoneCall size={24} className="group-hover:rotate-12 transition-transform" />
+                  Call {settings.phoneNumber}
+                </motion.a>
+              )}
+              
+              {settings.lineId && (
+                <motion.a
+                  whileHover={{ scale: 1.05 }}
+                  whileTap={{ scale: 0.95 }}
+                  href={`https://line.me/ti/p/~${settings.lineId}`}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="flex items-center justify-center gap-3 bg-[#00B900] text-white px-10 py-5 rounded-2xl font-bold hover:bg-[#009900] transition-all shadow-2xl shadow-[#00B900]/30 group"
+                >
+                  <MessageCircle size={24} className="group-hover:scale-110 transition-transform" />
+                  LINE: {settings.lineId}
+                </motion.a>
+              )}
+            </div>
+          </motion.div>
         </div>
       </section>
     </div>
