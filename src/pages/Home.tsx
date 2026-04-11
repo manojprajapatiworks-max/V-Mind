@@ -8,6 +8,7 @@ import { handleFirestoreError, OperationType } from "../lib/firestore-error";
 import { useLanguage } from "../contexts/LanguageContext";
 import { getHeroBackground } from "../constants/heroBackgrounds";
 import HeroParticles from "../components/HeroParticles";
+import HeroOrbs from "../components/HeroOrbs";
 
 const iconMap: Record<string, any> = {
   Zap, ShieldCheck, Network, PhoneCall, MessageCircle, Star, ChevronDown, ChevronUp, BarChart3, Info, Globe, Shield: ShieldCheck, Flash: Zap
@@ -92,6 +93,7 @@ export default function Home() {
       {/* Hero Section */}
       <section className={`relative text-white overflow-hidden py-32 md:py-48 flex items-center justify-center min-h-[90vh] ${heroBg.className}`}>
         {hero.backgroundId === "moving-dots" && <HeroParticles />}
+        {hero.backgroundId === "floating-orbs" && <HeroOrbs />}
         
         {/* Abstract Background Elements */}
         <div className="absolute inset-0 overflow-hidden pointer-events-none">

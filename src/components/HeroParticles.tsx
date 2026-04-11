@@ -29,10 +29,10 @@ export default function HeroParticles() {
       constructor() {
         this.x = Math.random() * canvas.width;
         this.y = Math.random() * canvas.height;
-        this.size = Math.random() * 2 + 0.5;
-        this.speedX = (Math.random() - 0.5) * 0.5;
-        this.speedY = (Math.random() - 0.5) * 0.5;
-        this.opacity = Math.random() * 0.5 + 0.2;
+        this.size = Math.random() * 3 + 1; // Slightly larger
+        this.speedX = (Math.random() - 0.5) * 0.8; // Slightly faster
+        this.speedY = (Math.random() - 0.5) * 0.8;
+        this.opacity = Math.random() * 0.5 + 0.5; // Increased opacity (0.5 to 1.0)
       }
 
       update() {
@@ -57,7 +57,7 @@ export default function HeroParticles() {
 
     const init = () => {
       particles = [];
-      const numberOfParticles = Math.floor((canvas.width * canvas.height) / 15000);
+      const numberOfParticles = Math.floor((canvas.width * canvas.height) / 12000); // More particles
       for (let i = 0; i < numberOfParticles; i++) {
         particles.push(new Particle());
       }
@@ -77,9 +77,9 @@ export default function HeroParticles() {
           const dy = particles[i].y - particles[j].y;
           const distance = Math.sqrt(dx * dx + dy * dy);
 
-          if (distance < 150) {
-            ctx.strokeStyle = `rgba(255, 255, 255, ${0.1 * (1 - distance / 150)})`;
-            ctx.lineWidth = 0.5;
+          if (distance < 180) { // Increased connection distance
+            ctx.strokeStyle = `rgba(255, 255, 255, ${0.3 * (1 - distance / 180)})`; // Increased connection opacity
+            ctx.lineWidth = 0.8; // Slightly thicker lines
             ctx.beginPath();
             ctx.moveTo(particles[i].x, particles[i].y);
             ctx.lineTo(particles[j].x, particles[j].y);
@@ -105,7 +105,7 @@ export default function HeroParticles() {
   return (
     <canvas
       ref={canvasRef}
-      className="absolute inset-0 w-full h-full pointer-events-none opacity-40"
+      className="absolute inset-0 w-full h-full pointer-events-none opacity-70"
     />
   );
 }

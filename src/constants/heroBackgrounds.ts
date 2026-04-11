@@ -71,6 +71,12 @@ export const HERO_BACKGROUNDS: HeroBackground[] = [
     name: "Moving Dots (Dynamic)",
     className: "bg-slate-950",
     previewColor: "#020617"
+  },
+  {
+    id: "floating-orbs",
+    name: "Floating Orbs (Dynamic)",
+    className: "bg-slate-950",
+    previewColor: "#0f172a"
   }
 ];
 
