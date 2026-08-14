@@ -5,6 +5,7 @@ import { motion } from "framer-motion";
 import { Zap, ShieldCheck, Network, Cable, Server, Phone, Video, AlertTriangle } from "lucide-react";
 import { handleFirestoreError, OperationType } from "../lib/firestore-error";
 import { useLanguage } from "../contexts/LanguageContext";
+import { getDirectImageUrl } from "../lib/utils";
 
 const iconMap: Record<string, any> = {
   Zap, ShieldCheck, Network, Cable, Server, Phone, Video, AlertTriangle
@@ -88,20 +89,34 @@ export default function Services() {
                         key={service.id}
                         whileHover={{ y: -8, scale: 1.02 }}
                         transition={{ duration: 0.2 }}
-                        className={`bg-gradient-to-br ${colorClass} rounded-3xl p-8 border shadow-xl transition-all relative overflow-hidden group`}
+                        className={`bg-gradient-to-br ${colorClass} rounded-3xl p-8 border shadow-xl transition-all relative overflow-hidden group flex flex-col justify-between`}
                       >
-                        <div className="absolute top-0 right-0 w-32 h-32 bg-white/50 rounded-full blur-2xl -mr-10 -mt-10 transition-all group-hover:scale-150" />
+                        <div className="absolute top-0 right-0 w-32 h-32 bg-white/50 rounded-full blur-2xl -mr-10 -mt-10 transition-all group-hover:scale-150 pointer-events-none" />
                         
-                        <div className="relative z-10">
-                          <div className="w-16 h-16 bg-white rounded-2xl flex items-center justify-center mb-6 shadow-sm border border-white/50 group-hover:shadow-md transition-all">
-                            <Icon size={32} strokeWidth={1.5} />
+                        <div className="relative z-10 flex flex-col h-full justify-between">
+                          <div>
+                            <div className="flex items-start justify-between gap-4 mb-6">
+                              <div className="w-16 h-16 bg-white rounded-2xl flex items-center justify-center shadow-sm border border-white/50 group-hover:shadow-md transition-all shrink-0">
+                                <Icon size={32} strokeWidth={1.5} />
+                              </div>
+                              {service.imageUrl && (
+                                <div className="w-24 h-24 sm:w-28 sm:h-28 rounded-2xl overflow-hidden border-2 border-white shadow-md shrink-0 bg-slate-100">
+                                  <img 
+                                    src={getDirectImageUrl(service.imageUrl)} 
+                                    alt={service.title_en || "Service"} 
+                                    className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-500" 
+                                    referrerPolicy="no-referrer"
+                                  />
+                                </div>
+                              )}
+                            </div>
+                            <h3 className="text-2xl font-display font-bold text-slate-900 mb-4">
+                              {language === 'en' ? (service.title_en || service.title) : (service.title_th || service.title_en || service.title)}
+                            </h3>
+                            <p className="text-slate-600 leading-relaxed text-lg">
+                              {language === 'en' ? (service.description_en || service.description) : (service.description_th || service.description_en || service.description)}
+                            </p>
                           </div>
-                          <h3 className="text-2xl font-display font-bold text-slate-900 mb-4">
-                            {language === 'en' ? (service.title_en || service.title) : (service.title_th || service.title_en || service.title)}
-                          </h3>
-                          <p className="text-slate-600 leading-relaxed text-lg">
-                            {language === 'en' ? (service.description_en || service.description) : (service.description_th || service.description_en || service.description)}
-                          </p>
                         </div>
                       </motion.div>
                     );

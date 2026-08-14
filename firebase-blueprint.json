@@ -44,6 +44,7 @@
       "properties": {
         "email": { "type": "string" },
         "role": { "type": "string" },
+        "password": { "type": "string" },
         "createdAt": { "type": "string" }
       }
     },
@@ -59,6 +60,7 @@
         "category_en": { "type": "string" },
         "category_th": { "type": "string" },
         "iconName": { "type": "string" },
+        "imageUrl": { "type": "string" },
         "order": { "type": "number" }
       }
     },

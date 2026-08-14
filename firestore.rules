@@ -55,14 +55,15 @@ service cloud.firestore {
     }
 
     function isValidAdminUser(data) {
-      return hasOnlyAllowedFields(['email', 'role', 'createdAt']) &&
+      return hasOnlyAllowedFields(['email', 'role', 'createdAt', 'password']) &&
              data.email is string && data.email.size() > 0 &&
              data.role in ['admin', 'superadmin'] &&
-             (!('createdAt' in data) || data.createdAt is string);
+             (!('createdAt' in data) || data.createdAt is string) &&
+             (!('password' in data) || (data.password is string && data.password.size() <= 200));
     }
     
     function isValidService(data) {
-      return hasOnlyAllowedFields(['title_en', 'title_th', 'description_en', 'description_th', 'category_en', 'category_th', 'iconName', 'order']) &&
+      return hasOnlyAllowedFields(['title_en', 'title_th', 'description_en', 'description_th', 'category_en', 'category_th', 'iconName', 'order', 'imageUrl']) &&
              (!('title_en' in data) || (data.title_en is string && data.title_en.size() <= 200)) &&
              (!('title_th' in data) || (data.title_th is string && data.title_th.size() <= 200)) &&
              (!('description_en' in data) || (data.description_en is string && data.description_en.size() <= 2000)) &&
@@ -70,6 +71,7 @@ service cloud.firestore {
              (!('category_en' in data) || (data.category_en is string && data.category_en.size() <= 100)) &&
              (!('category_th' in data) || (data.category_th is string && data.category_th.size() <= 100)) &&
              (!('iconName' in data) || (data.iconName is string && data.iconName.size() <= 100)) &&
+             (!('imageUrl' in data) || (data.imageUrl is string && data.imageUrl.size() <= 2000)) &&
              (!('order' in data) || data.order is number);
     }
 

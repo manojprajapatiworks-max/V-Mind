@@ -201,8 +201,20 @@ export default function Home() {
                 >
                   <div className="absolute top-0 right-0 w-64 h-64 bg-blue-50 rounded-full blur-3xl -mr-20 -mt-20 transition-all group-hover:bg-blue-100" />
                   <div className="relative z-10 h-full flex flex-col justify-between">
-                    <div className="w-14 h-14 bg-blue-600 text-white rounded-2xl flex items-center justify-center shadow-lg shadow-blue-600/30">
-                      <Icon size={28} />
+                    <div className="flex items-start justify-between gap-4 mb-6">
+                      <div className="w-14 h-14 bg-blue-600 text-white rounded-2xl flex items-center justify-center shadow-lg shadow-blue-600/30 shrink-0">
+                        <Icon size={28} />
+                      </div>
+                      {service.imageUrl && (
+                        <div className="w-20 h-20 rounded-2xl overflow-hidden border border-slate-200 shadow-sm shrink-0 bg-slate-100">
+                          <img 
+                            src={getDirectImageUrl(service.imageUrl)} 
+                            alt={service.title_en || "Service"} 
+                            className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-500" 
+                            referrerPolicy="no-referrer"
+                          />
+                        </div>
+                      )}
                     </div>
                     <div>
                       <h3 className="text-2xl font-display font-bold text-slate-900 mb-3">

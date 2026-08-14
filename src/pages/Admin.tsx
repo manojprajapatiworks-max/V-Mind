@@ -1,10 +1,10 @@
 import React, { useState, useEffect, FormEvent } from "react";
 import { initializeApp, getApps } from "firebase/app";
-import { getAuth, signOut, onAuthStateChanged, signInWithEmailAndPassword, createUserWithEmailAndPassword } from "firebase/auth";
+import { getAuth, signOut, onAuthStateChanged, signInWithEmailAndPassword, createUserWithEmailAndPassword, sendPasswordResetEmail } from "firebase/auth";
 import { doc, setDoc, onSnapshot, collection, addDoc, updateDoc, deleteDoc, query, orderBy, where, getDocs, getDoc } from "firebase/firestore";
 import { auth, db } from "../firebase";
 import firebaseConfig from "../../firebase-applet-config.json";
-import { LogOut, Plus, Edit, Trash2, Save, X, LayoutDashboard, Settings, List, MessageSquare, FolderKanban, FileUp, Link as LinkIcon, Image as ImageIcon, CheckCircle, BarChart3, Download, HelpCircle, Info, Zap, Briefcase, ShieldCheck, Users, TrendingUp, Lock, Mail, History } from "lucide-react";
+import { LogOut, Plus, Edit, Trash2, Save, X, LayoutDashboard, Settings, List, MessageSquare, FolderKanban, FileUp, Link as LinkIcon, Image as ImageIcon, CheckCircle, BarChart3, Download, HelpCircle, Info, Zap, Briefcase, ShieldCheck, Users, TrendingUp, Lock, Mail, History, Eye, EyeOff, Copy, Check, Upload } from "lucide-react";
 import { handleFirestoreError, OperationType } from "../lib/firestore-error";
 import { toast } from "sonner";
 import { motion, AnimatePresence } from "framer-motion";
@@ -19,9 +19,13 @@ export default function Admin() {
   const [loading, setLoading] = useState(true);
   
   // Login state
-  const [loginEmail, setLoginEmail] = useState("");
+  const [loginEmail, setLoginEmail] = useState("manojprajapatiworks@gmail.com");
   const [loginPassword, setLoginPassword] = useState("");
   const [isLoggingIn, setIsLoggingIn] = useState(false);
+  const [isSignUp, setIsSignUp] = useState(false);
+  const [isForgotPassword, setIsForgotPassword] = useState(false);
+  const [authError, setAuthError] = useState<{ type: string; message: string } | null>(null);
+  const [resetSentSuccess, setResetSentSuccess] = useState(false);
   const [globalSettings, setGlobalSettings] = useState<any>({});
   
   const [confirmDialog, setConfirmDialog] = useState<{
@@ -79,6 +83,8 @@ export default function Admin() {
 
   const handleEmailLogin = async (e: FormEvent) => {
     e.preventDefault();
+    setAuthError(null);
+    setResetSentSuccess(false);
     if (!loginEmail || !loginPassword) {
       toast.error("Please enter email and password");
       return;
@@ -107,12 +113,112 @@ export default function Admin() {
     } catch (err: any) {
       console.error(err);
       if (err.code === 'auth/operation-not-allowed') {
-        toast.error("Email/Password login is not enabled in Firebase Console. Please enable it in Authentication > Sign-in method.");
-      } else if (err.code === 'auth/user-not-found' || err.code === 'auth/wrong-password' || err.code === 'auth/invalid-credential') {
-        toast.error("Invalid email or password");
+        setAuthError({
+          type: "not-allowed",
+          message: "Email/Password login is not enabled in Firebase Console. Please enable it in Authentication > Sign-in method."
+        });
+        toast.error("Email/Password login is disabled in Firebase.");
+      } else if (err.code === 'auth/user-not-found') {
+        setAuthError({
+          type: "user-not-found",
+          message: "No account exists for this email yet. Switch to the Register tab to create it."
+        });
+        toast.error("Account not found. Please click Register.");
+      } else if (err.code === 'auth/wrong-password' || err.code === 'auth/invalid-credential') {
+        setAuthError({
+          type: "invalid-credential",
+          message: "Invalid credentials or incorrect password. If you forgot your password, you can reset it instantly below."
+        });
+        toast.error("Invalid email or password.");
       } else {
+        setAuthError({
+          type: "general",
+          message: err.message || "Failed to sign in."
+        });
         toast.error("Login failed: " + err.message);
       }
+    } finally {
+      setIsLoggingIn(false);
+    }
+  };
+
+  const handleEmailSignUp = async (e: FormEvent) => {
+    e.preventDefault();
+    setAuthError(null);
+    setResetSentSuccess(false);
+    if (!loginEmail || !loginPassword) {
+      toast.error("Please enter email and password");
+      return;
+    }
+    if (loginPassword.length < 6) {
+      toast.error("Password must be at least 6 characters");
+      return;
+    }
+    const email = loginEmail.trim().toLowerCase();
+    setIsLoggingIn(true);
+    try {
+      const userCredential = await createUserWithEmailAndPassword(auth, email, loginPassword);
+      const u = userCredential.user;
+      
+      // Register in admins collection if they are the superadmin or added
+      const superAdminEmail = "manojprajapatiworks@gmail.com";
+      if (email === superAdminEmail) {
+        await setDoc(doc(db, "admins", email), {
+          email: email,
+          role: "superadmin",
+          createdAt: new Date().toISOString()
+        });
+      }
+      
+      toast.success("Account registered successfully!");
+    } catch (err: any) {
+      console.error(err);
+      if (err.code === 'auth/email-already-in-use') {
+        setAuthError({
+          type: "email-in-use",
+          message: `The email "${email}" is already registered. Please sign in with your password, or reset your password if forgotten.`
+        });
+        setIsSignUp(false); // automatically switch to sign in tab
+        toast.error("Email is already registered. Switched to Sign In.");
+      } else if (err.code === 'auth/operation-not-allowed') {
+        setAuthError({
+          type: "not-allowed",
+          message: "Email/Password registration is not enabled in Firebase Console. Please enable it in Authentication > Sign-in method."
+        });
+        toast.error("Email/Password registration is disabled in Firebase.");
+      } else {
+        setAuthError({
+          type: "general",
+          message: err.message || "Registration failed."
+        });
+        toast.error("Registration failed: " + err.message);
+      }
+    } finally {
+      setIsLoggingIn(false);
+    }
+  };
+
+  const handleForgotPassword = async (e?: FormEvent) => {
+    if (e) e.preventDefault();
+    setAuthError(null);
+    if (!loginEmail) {
+      toast.error("Please enter your email address first");
+      return;
+    }
+    const email = loginEmail.trim().toLowerCase();
+    setIsLoggingIn(true);
+    try {
+      await sendPasswordResetEmail(auth, email);
+      setResetSentSuccess(true);
+      toast.success(`Password reset link sent to ${email}!`);
+      setIsForgotPassword(false);
+    } catch (err: any) {
+      console.error(err);
+      setAuthError({
+        type: "reset-failed",
+        message: "Failed to send reset email: " + (err.message || "Unknown error")
+      });
+      toast.error("Failed to send reset link: " + err.message);
     } finally {
       setIsLoggingIn(false);
     }
@@ -146,7 +252,7 @@ export default function Admin() {
     return (
       <div className="min-h-screen bg-slate-50 flex items-center justify-center p-4">
         <div className="bg-white p-8 rounded-2xl shadow-xl max-w-md w-full">
-          <div className="text-center mb-8">
+          <div className="text-center mb-6">
             <div className="inline-flex mb-4">
               {globalSettings.logoUrl ? (
                 <img src={getDirectImageUrl(globalSettings.logoUrl)} alt="Logo" className="h-16 w-auto object-contain" referrerPolicy="no-referrer" />
@@ -156,11 +262,114 @@ export default function Admin() {
                 </div>
               )}
             </div>
-            <h1 className="text-2xl font-bold text-slate-900">Admin Login</h1>
-            <p className="text-slate-500">Sign in to manage {globalSettings.companyName || "V Mind"} content.</p>
+            <h1 className="text-2xl font-bold text-slate-900">
+              {isForgotPassword ? "Reset Password" : isSignUp ? "Create Admin Account" : "Admin Login"}
+            </h1>
+            <p className="text-slate-500 text-sm mt-1">
+              {isForgotPassword 
+                ? "Enter your email to receive a password reset link." 
+                : isSignUp 
+                  ? "Register as an administrator for V Mind." 
+                  : `Sign in to manage ${globalSettings.companyName || "V Mind"} content.`}
+            </p>
           </div>
 
-          <form onSubmit={handleEmailLogin} className="space-y-4 mb-6">
+          {!isForgotPassword && (
+            <div className="flex border-b border-slate-100 mb-6">
+              <button
+                type="button"
+                className={`flex-1 pb-3 text-sm font-semibold border-b-2 transition ${!isSignUp ? "border-blue-600 text-blue-600" : "border-transparent text-slate-500 hover:text-slate-800"}`}
+                onClick={() => { 
+                  setIsSignUp(false); 
+                  setAuthError(null);
+                  setResetSentSuccess(false);
+                }}
+              >
+                Sign In
+              </button>
+              <button
+                type="button"
+                className={`flex-1 pb-3 text-sm font-semibold border-b-2 transition ${isSignUp ? "border-blue-600 text-blue-600" : "border-transparent text-slate-500 hover:text-slate-800"}`}
+                onClick={() => { 
+                  setIsSignUp(true); 
+                  setAuthError(null);
+                  setResetSentSuccess(false);
+                }}
+              >
+                Register
+              </button>
+            </div>
+          )}
+
+          {resetSentSuccess && (
+            <div className="mb-4 p-3 bg-emerald-50 border border-emerald-200 text-emerald-800 rounded-xl text-sm flex flex-col gap-1">
+              <div className="font-bold flex items-center gap-1.5">
+                <span>✓</span> Reset Link Sent!
+              </div>
+              <p className="text-xs text-emerald-700">
+                A password reset link was sent to <strong>{loginEmail}</strong>. Please check your inbox and spam folder.
+              </p>
+            </div>
+          )}
+
+          {authError && (
+            <div className="mb-4 p-3.5 bg-amber-50 border border-amber-200 rounded-xl text-sm text-amber-900">
+              <p className="font-medium text-xs mb-2 leading-relaxed">{authError.message}</p>
+              {authError.type === "invalid-credential" && (
+                <div className="flex items-center gap-2 pt-1 border-t border-amber-200/60">
+                  <button
+                    type="button"
+                    onClick={() => handleForgotPassword()}
+                    disabled={isLoggingIn}
+                    className="text-xs font-bold text-blue-700 bg-blue-50 hover:bg-blue-100 px-3 py-1.5 rounded-lg transition"
+                  >
+                    Reset Password for {loginEmail}
+                  </button>
+                </div>
+              )}
+              {authError.type === "email-in-use" && (
+                <div className="flex items-center gap-2 pt-1 border-t border-amber-200/60">
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setIsSignUp(false);
+                      setAuthError(null);
+                    }}
+                    className="text-xs font-bold text-blue-700 bg-blue-50 hover:bg-blue-100 px-3 py-1.5 rounded-lg transition"
+                  >
+                    Sign In with this Email
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => handleForgotPassword()}
+                    disabled={isLoggingIn}
+                    className="text-xs font-semibold text-slate-700 hover:underline"
+                  >
+                    Reset Password
+                  </button>
+                </div>
+              )}
+              {authError.type === "user-not-found" && (
+                <div className="flex items-center gap-2 pt-1 border-t border-amber-200/60">
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setIsSignUp(true);
+                      setAuthError(null);
+                    }}
+                    className="text-xs font-bold text-blue-700 bg-blue-50 hover:bg-blue-100 px-3 py-1.5 rounded-lg transition"
+                  >
+                    Register Account Now
+                  </button>
+                </div>
+              )}
+            </div>
+          )}
+
+          <form 
+            onSubmit={isForgotPassword ? handleForgotPassword : isSignUp ? handleEmailSignUp : handleEmailLogin} 
+            className="space-y-4"
+          >
             <div>
               <label className="block text-sm font-bold text-slate-700 mb-1">Email Address</label>
               <div className="relative">
@@ -175,27 +384,54 @@ export default function Admin() {
                 />
               </div>
             </div>
-            <div>
-              <label className="block text-sm font-bold text-slate-700 mb-1">Password</label>
-              <div className="relative">
-                <Lock className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" size={18} />
-                <input
-                  type="password"
-                  value={loginPassword}
-                  onChange={(e) => setLoginPassword(e.target.value)}
-                  className="w-full pl-10 pr-4 py-3 bg-slate-50 border border-slate-200 rounded-xl focus:ring-2 focus:ring-blue-500 outline-none transition"
-                  placeholder="••••••••"
-                  required
-                />
+
+            {!isForgotPassword && (
+              <div>
+                <div className="flex justify-between items-center mb-1">
+                  <label className="block text-sm font-bold text-slate-700">Password</label>
+                  {!isSignUp && (
+                    <button
+                      type="button"
+                      onClick={() => setIsForgotPassword(true)}
+                      className="text-xs text-blue-600 hover:underline font-semibold"
+                    >
+                      Forgot Password?
+                    </button>
+                  )}
+                </div>
+                <div className="relative">
+                  <Lock className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" size={18} />
+                  <input
+                    type="password"
+                    value={loginPassword}
+                    onChange={(e) => setLoginPassword(e.target.value)}
+                    className="w-full pl-10 pr-4 py-3 bg-slate-50 border border-slate-200 rounded-xl focus:ring-2 focus:ring-blue-500 outline-none transition"
+                    placeholder="••••••••"
+                    required
+                  />
+                </div>
               </div>
-            </div>
+            )}
+
             <button
               type="submit"
               disabled={isLoggingIn}
-              className="w-full bg-blue-600 text-white font-bold py-3 px-4 rounded-xl hover:bg-blue-700 transition flex items-center justify-center gap-2 shadow-lg shadow-blue-600/20 disabled:opacity-50"
+              className="w-full bg-blue-600 text-white font-bold py-3 px-4 rounded-xl hover:bg-blue-700 transition flex items-center justify-center gap-2 shadow-lg shadow-blue-600/20 disabled:opacity-50 mt-2"
             >
-              {isLoggingIn ? "Signing in..." : "Sign In"}
+              {isLoggingIn 
+                ? (isForgotPassword ? "Sending link..." : isSignUp ? "Registering..." : "Signing in...") 
+                : (isForgotPassword ? "Send Reset Link" : isSignUp ? "Register Admin" : "Sign In")}
             </button>
+
+            {isForgotPassword && (
+              <button
+                type="button"
+                onClick={() => setIsForgotPassword(false)}
+                className="w-full text-sm text-slate-500 hover:text-slate-800 font-semibold text-center mt-2 block"
+              >
+                Back to Sign In
+              </button>
+            )}
           </form>
         </div>
       </div>
@@ -1111,12 +1347,16 @@ function FaqsEditor({ openConfirm }: { openConfirm: (title: string, message: str
 function ServicesEditor({ openConfirm }: { openConfirm: (title: string, message: string, onConfirm: () => void) => void }) {
   const [services, setServices] = useState<any[]>([]);
   const [editingId, setEditingId] = useState<string | null>(null);
+  const [viewMode, setViewMode] = useState<"cards" | "table">("cards");
   const [form, setForm] = useState({ 
     title_en: "", title_th: "", 
     description_en: "", description_th: "", 
     category_en: "", category_th: "", 
-    iconName: "Zap", order: 0 
+    iconName: "Zap", 
+    imageUrl: "", 
+    order: 0 
   });
+  const [uploadingImage, setUploadingImage] = useState(false);
 
   useEffect(() => {
     const q = query(collection(db, "services"), orderBy("order", "asc"));
@@ -1127,6 +1367,27 @@ function ServicesEditor({ openConfirm }: { openConfirm: (title: string, message:
     });
     return () => unsub();
   }, []);
+
+  const handleImageFileUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    if (file.size > 1048576) {
+      toast.error("File size must be less than 1MB");
+      return;
+    }
+    setUploadingImage(true);
+    const reader = new FileReader();
+    reader.onloadend = () => {
+      setForm(prev => ({ ...prev, imageUrl: reader.result as string }));
+      setUploadingImage(false);
+      toast.success("Image uploaded successfully");
+    };
+    reader.onerror = () => {
+      setUploadingImage(false);
+      toast.error("Failed to read image file");
+    };
+    reader.readAsDataURL(file);
+  };
 
   const handleSave = async (e: FormEvent) => {
     e.preventDefault();
@@ -1143,7 +1404,9 @@ function ServicesEditor({ openConfirm }: { openConfirm: (title: string, message:
         title_en: "", title_th: "", 
         description_en: "", description_th: "", 
         category_en: "", category_th: "", 
-        iconName: "Zap", order: 0 
+        iconName: "Zap", 
+        imageUrl: "", 
+        order: 0 
       });
     } catch (err) {
       handleFirestoreError(err, editingId ? OperationType.UPDATE : OperationType.CREATE, "services");
@@ -1177,8 +1440,11 @@ function ServicesEditor({ openConfirm }: { openConfirm: (title: string, message:
       category_en: service.category_en || service.category || "",
       category_th: service.category_th || "",
       iconName: service.iconName || "Zap",
+      imageUrl: service.imageUrl || "",
       order: service.order || 0
     });
+    // Scroll smoothly to form
+    window.scrollTo({ top: 0, behavior: "smooth" });
   };
 
   return (
@@ -1190,11 +1456,11 @@ function ServicesEditor({ openConfirm }: { openConfirm: (title: string, message:
         <form onSubmit={handleSave} className="grid grid-cols-1 md:grid-cols-2 gap-4">
           <div>
             <label className="block text-sm font-medium text-slate-700 mb-1">Title (EN)</label>
-            <input required type="text" value={form.title_en} onChange={e => setForm({...form, title_en: e.target.value})} className="w-full px-3 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none" />
+            <input required type="text" value={form.title_en} onChange={e => setForm({...form, title_en: e.target.value})} placeholder="e.g. Electrical Engineering" className="w-full px-3 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none" />
           </div>
           <div>
             <label className="block text-sm font-medium text-slate-700 mb-1">Title (TH)</label>
-            <input required type="text" value={form.title_th} onChange={e => setForm({...form, title_th: e.target.value})} className="w-full px-3 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none" />
+            <input required type="text" value={form.title_th} onChange={e => setForm({...form, title_th: e.target.value})} placeholder="e.g. งานระบบวิศวกรรมไฟฟ้า" className="w-full px-3 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none" />
           </div>
           <div>
             <label className="block text-sm font-medium text-slate-700 mb-1">Category (EN)</label>
@@ -1206,11 +1472,11 @@ function ServicesEditor({ openConfirm }: { openConfirm: (title: string, message:
           </div>
           <div>
             <label className="block text-sm font-medium text-slate-700 mb-1">Description (EN)</label>
-            <textarea required rows={3} value={form.description_en} onChange={e => setForm({...form, description_en: e.target.value})} className="w-full px-3 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none resize-none" />
+            <textarea required rows={3} value={form.description_en} onChange={e => setForm({...form, description_en: e.target.value})} placeholder="Comprehensive electrical installation..." className="w-full px-3 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none resize-none" />
           </div>
           <div>
             <label className="block text-sm font-medium text-slate-700 mb-1">Description (TH)</label>
-            <textarea required rows={3} value={form.description_th} onChange={e => setForm({...form, description_th: e.target.value})} className="w-full px-3 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none resize-none" />
+            <textarea required rows={3} value={form.description_th} onChange={e => setForm({...form, description_th: e.target.value})} placeholder="บริการติดตั้งระบบไฟฟ้าครบวงจร..." className="w-full px-3 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none resize-none" />
           </div>
           <div>
             <label className="block text-sm font-medium text-slate-700 mb-1">Icon Name (Lucide)</label>
@@ -1229,12 +1495,97 @@ function ServicesEditor({ openConfirm }: { openConfirm: (title: string, message:
             <label className="block text-sm font-medium text-slate-700 mb-1">Display Order</label>
             <input type="number" value={form.order} onChange={e => setForm({...form, order: Number(e.target.value)})} className="w-full px-3 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none" />
           </div>
-          <div className="md:col-span-2 flex gap-3 mt-2">
-            <button type="submit" className="bg-blue-600 text-white px-6 py-2 rounded-lg font-medium hover:bg-blue-700 transition flex items-center gap-2">
-              {editingId ? <><Save size={18}/> Update</> : <><Plus size={18}/> Add Service</>}
+
+          {/* Service Image Link & Upload */}
+          <div className="md:col-span-2 border-t border-slate-200 pt-4 mt-2">
+            <label className="block text-sm font-bold text-slate-800 mb-1 flex items-center justify-between">
+              <span className="flex items-center gap-1.5">
+                <ImageIcon size={16} className="text-blue-600" /> Service Image Link / Upload
+              </span>
+              {form.imageUrl && (
+                <button
+                  type="button"
+                  onClick={() => setForm(prev => ({ ...prev, imageUrl: "" }))}
+                  className="text-xs text-red-600 hover:underline font-normal"
+                >
+                  Remove Image
+                </button>
+              )}
+            </label>
+            
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-4 items-start">
+              <div className="md:col-span-2 space-y-2">
+                <div className="flex gap-2">
+                  <input 
+                    type="url" 
+                    value={form.imageUrl} 
+                    onChange={e => setForm({...form, imageUrl: e.target.value})} 
+                    placeholder="Paste image link (e.g. https://images.unsplash.com/... or Google Drive URL)" 
+                    className="flex-1 px-3 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none text-sm" 
+                  />
+                  <div className="relative shrink-0">
+                    <input 
+                      type="file" 
+                      id="service-image-upload" 
+                      accept="image/*" 
+                      className="hidden" 
+                      onChange={handleImageFileUpload}
+                      disabled={uploadingImage}
+                    />
+                    <label 
+                      htmlFor="service-image-upload" 
+                      className="inline-flex items-center gap-1.5 px-3 py-2 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-lg text-sm font-medium cursor-pointer transition border border-slate-300"
+                    >
+                      <Upload size={15} />
+                      {uploadingImage ? "Loading..." : "Upload File"}
+                    </label>
+                  </div>
+                </div>
+                <p className="text-xs text-slate-500">
+                  Provide an image URL or upload directly (under 1MB). This image will appear on the right side of the service.
+                </p>
+              </div>
+
+              {/* Live Preview */}
+              <div className="h-28 rounded-xl border border-slate-200 bg-slate-50 overflow-hidden flex items-center justify-center relative">
+                {form.imageUrl ? (
+                  <img 
+                    src={getDirectImageUrl(form.imageUrl)} 
+                    alt="Service Preview" 
+                    className="w-full h-full object-cover" 
+                    referrerPolicy="no-referrer" 
+                    onError={(e) => {
+                      (e.target as HTMLElement).style.display = 'none';
+                    }}
+                  />
+                ) : (
+                  <div className="text-center p-2 text-slate-400">
+                    <ImageIcon size={24} className="mx-auto mb-1 opacity-50" />
+                    <span className="text-[11px] block">No image selected</span>
+                  </div>
+                )}
+                {form.imageUrl && (
+                  <span className="absolute bottom-1 right-1 bg-black/60 text-white text-[10px] px-1.5 py-0.5 rounded font-medium">
+                    Preview
+                  </span>
+                )}
+              </div>
+            </div>
+          </div>
+
+          <div className="md:col-span-2 flex gap-3 mt-4">
+            <button type="submit" className="bg-blue-600 text-white px-6 py-2.5 rounded-xl font-medium hover:bg-blue-700 transition flex items-center gap-2 shadow-sm">
+              {editingId ? <><Save size={18}/> Update Service</> : <><Plus size={18}/> Add Service</>}
             </button>
             {editingId && (
-              <button type="button" onClick={() => { setEditingId(null); setForm({ title_en: "", title_th: "", description_en: "", description_th: "", category_en: "", category_th: "", iconName: "Zap", order: 0 }); }} className="bg-slate-200 text-slate-700 px-6 py-2 rounded-lg font-medium hover:bg-slate-300 transition">
+              <button 
+                type="button" 
+                onClick={() => { 
+                  setEditingId(null); 
+                  setForm({ title_en: "", title_th: "", description_en: "", description_th: "", category_en: "", category_th: "", iconName: "Zap", imageUrl: "", order: 0 }); 
+                }} 
+                className="bg-slate-200 text-slate-700 px-6 py-2.5 rounded-xl font-medium hover:bg-slate-300 transition"
+              >
                 Cancel
               </button>
             )}
@@ -1242,39 +1593,169 @@ function ServicesEditor({ openConfirm }: { openConfirm: (title: string, message:
         </form>
       </div>
 
-      <div className="bg-white rounded-2xl shadow-sm border border-slate-200 overflow-hidden">
-        <table className="w-full text-left border-collapse">
-          <thead>
-            <tr className="bg-slate-50 border-b border-slate-200 text-slate-600 text-sm">
-              <th className="p-4 font-medium">Order</th>
-              <th className="p-4 font-medium">Title</th>
-              <th className="p-4 font-medium">Category</th>
-              <th className="p-4 font-medium">Actions</th>
-            </tr>
-          </thead>
-          <tbody>
-            {services.map(s => (
-              <tr key={s.id} className="border-b border-slate-100 hover:bg-slate-50">
-                <td className="p-4 text-slate-500">{s.order}</td>
-                <td className="p-4">
-                  <div className="font-medium text-slate-900">{s.title_en || s.title}</div>
-                  <div className="text-xs text-slate-500">{s.title_th || "No Thai Title"}</div>
-                </td>
-                <td className="p-4 text-slate-500">
-                  <span className="bg-blue-100 text-blue-800 px-2 py-1 rounded-md text-xs">{s.category_en || s.category}</span>
-                </td>
-                <td className="p-4 flex gap-2">
-                  <button onClick={() => startEdit(s)} className="p-2 text-blue-600 hover:bg-blue-50 rounded-lg transition"><Edit size={18}/></button>
-                  <button onClick={() => handleDelete(s.id)} className="p-2 text-red-600 hover:bg-red-50 rounded-lg transition"><Trash2 size={18}/></button>
-                </td>
-              </tr>
-            ))}
-            {services.length === 0 && (
-              <tr><td colSpan={4} className="p-8 text-center text-slate-500">No services added yet.</td></tr>
-            )}
-          </tbody>
-        </table>
+      {/* Services List / Cards Header */}
+      <div className="flex justify-between items-center">
+        <div>
+          <h3 className="text-xl font-bold text-slate-900">Current Services ({services.length})</h3>
+          <p className="text-sm text-slate-500">View and manage services with updated images displayed on the right side.</p>
+        </div>
+        <div className="flex bg-slate-200/80 p-1 rounded-xl gap-1">
+          <button
+            onClick={() => setViewMode("cards")}
+            className={`px-3 py-1.5 rounded-lg text-xs font-semibold transition ${viewMode === "cards" ? "bg-white text-blue-600 shadow-sm" : "text-slate-600 hover:text-slate-900"}`}
+          >
+            Card View (Right Image)
+          </button>
+          <button
+            onClick={() => setViewMode("table")}
+            className={`px-3 py-1.5 rounded-lg text-xs font-semibold transition ${viewMode === "table" ? "bg-white text-blue-600 shadow-sm" : "text-slate-600 hover:text-slate-900"}`}
+          >
+            Table View
+          </button>
+        </div>
       </div>
+
+      {/* Services Display: Cards View with Image on Right Side */}
+      {viewMode === "cards" && (
+        <div className="space-y-4">
+          {services.map(s => (
+            <div key={s.id} className="bg-white rounded-2xl p-5 shadow-sm border border-slate-200 hover:shadow-md transition flex flex-col md:flex-row gap-5 items-center justify-between">
+              {/* Left Side Details */}
+              <div className="flex-1 min-w-0">
+                <div className="flex items-center gap-2.5 mb-2">
+                  <span className="bg-slate-100 text-slate-600 font-bold px-2 py-0.5 rounded text-xs">
+                    #{s.order}
+                  </span>
+                  <span className="bg-blue-50 text-blue-700 font-semibold px-2.5 py-0.5 rounded-md text-xs">
+                    {s.category_en || s.category || "General"}
+                  </span>
+                  {s.category_th && (
+                    <span className="text-xs text-slate-400">
+                      ({s.category_th})
+                    </span>
+                  )}
+                </div>
+
+                <h4 className="text-lg font-bold text-slate-900">
+                  {s.title_en || s.title}
+                </h4>
+                {s.title_th && (
+                  <p className="text-sm font-medium text-slate-500 mb-2">
+                    {s.title_th}
+                  </p>
+                )}
+
+                <p className="text-sm text-slate-600 line-clamp-2 leading-relaxed">
+                  {s.description_en || s.description || "No description provided"}
+                </p>
+
+                <div className="flex items-center gap-2 mt-4 pt-3 border-t border-slate-100">
+                  <button 
+                    onClick={() => startEdit(s)} 
+                    className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-blue-50 text-blue-600 hover:bg-blue-100 rounded-lg text-xs font-semibold transition"
+                  >
+                    <Edit size={14} /> Edit Service
+                  </button>
+                  <button 
+                    onClick={() => handleDelete(s.id)} 
+                    className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-red-50 text-red-600 hover:bg-red-100 rounded-lg text-xs font-semibold transition"
+                  >
+                    <Trash2 size={14} /> Delete
+                  </button>
+                </div>
+              </div>
+
+              {/* Right Side Image Display */}
+              <div className="w-full md:w-56 h-36 rounded-xl overflow-hidden border border-slate-200 bg-slate-50 shrink-0 relative group shadow-sm">
+                {s.imageUrl ? (
+                  <img 
+                    src={getDirectImageUrl(s.imageUrl)} 
+                    alt={s.title_en || "Service image"} 
+                    className="w-full h-full object-cover transition-transform group-hover:scale-105" 
+                    referrerPolicy="no-referrer"
+                  />
+                ) : (
+                  <div className="w-full h-full flex flex-col items-center justify-center text-slate-400 p-4 text-center">
+                    <ImageIcon size={28} className="mb-1 opacity-40 text-slate-400" />
+                    <span className="text-xs font-medium text-slate-400">No Image Uploaded</span>
+                    <button 
+                      onClick={() => startEdit(s)}
+                      className="mt-1 text-[11px] text-blue-600 hover:underline font-semibold"
+                    >
+                      + Add Image Link
+                    </button>
+                  </div>
+                )}
+                {s.imageUrl && (
+                  <span className="absolute bottom-2 right-2 bg-slate-900/70 text-white text-[10px] px-2 py-0.5 rounded backdrop-blur-sm font-medium">
+                    Service Image
+                  </span>
+                )}
+              </div>
+            </div>
+          ))}
+
+          {services.length === 0 && (
+            <div className="bg-white rounded-2xl p-12 text-center text-slate-500 border border-slate-200">
+              No services added yet. Fill out the form above to add your first service.
+            </div>
+          )}
+        </div>
+      )}
+
+      {/* Services Display: Table View */}
+      {viewMode === "table" && (
+        <div className="bg-white rounded-2xl shadow-sm border border-slate-200 overflow-hidden">
+          <table className="w-full text-left border-collapse">
+            <thead>
+              <tr className="bg-slate-50 border-b border-slate-200 text-slate-600 text-sm">
+                <th className="p-4 font-bold">Order</th>
+                <th className="p-4 font-bold">Service Image (Right Preview)</th>
+                <th className="p-4 font-bold">Title</th>
+                <th className="p-4 font-bold">Category</th>
+                <th className="p-4 font-bold">Actions</th>
+              </tr>
+            </thead>
+            <tbody>
+              {services.map(s => (
+                <tr key={s.id} className="border-b border-slate-100 hover:bg-slate-50 transition">
+                  <td className="p-4 text-slate-500 font-bold">#{s.order}</td>
+                  <td className="p-4">
+                    <div className="w-24 h-16 rounded-lg overflow-hidden border border-slate-200 bg-slate-100 flex items-center justify-center">
+                      {s.imageUrl ? (
+                        <img 
+                          src={getDirectImageUrl(s.imageUrl)} 
+                          alt={s.title_en} 
+                          className="w-full h-full object-cover" 
+                          referrerPolicy="no-referrer" 
+                        />
+                      ) : (
+                        <span className="text-[11px] text-slate-400">No Image</span>
+                      )}
+                    </div>
+                  </td>
+                  <td className="p-4">
+                    <div className="font-bold text-slate-900">{s.title_en || s.title}</div>
+                    <div className="text-xs text-slate-500">{s.title_th || "No Thai Title"}</div>
+                  </td>
+                  <td className="p-4 text-slate-500">
+                    <span className="bg-blue-100 text-blue-800 px-2 py-1 rounded-md text-xs font-semibold">{s.category_en || s.category}</span>
+                  </td>
+                  <td className="p-4">
+                    <div className="flex gap-1.5">
+                      <button onClick={() => startEdit(s)} className="p-2 text-blue-600 hover:bg-blue-50 rounded-lg transition" title="Edit"><Edit size={17}/></button>
+                      <button onClick={() => handleDelete(s.id)} className="p-2 text-red-600 hover:bg-red-50 rounded-lg transition" title="Delete"><Trash2 size={17}/></button>
+                    </div>
+                  </td>
+                </tr>
+              ))}
+              {services.length === 0 && (
+                <tr><td colSpan={5} className="p-8 text-center text-slate-500">No services added yet.</td></tr>
+              )}
+            </tbody>
+          </table>
+        </div>
+      )}
     </div>
   );
 }
@@ -1857,6 +2338,10 @@ function AdminsEditor({ openConfirm }: { openConfirm: (title: string, message: s
   const [newEmail, setNewEmail] = useState("");
   const [newPassword, setNewPassword] = useState("");
   const [loading, setLoading] = useState(false);
+  const [visiblePasswords, setVisiblePasswords] = useState<Record<string, boolean>>({});
+  const [copiedEmail, setCopiedEmail] = useState<string | null>(null);
+  const [editingPasswordEmail, setEditingPasswordEmail] = useState<string | null>(null);
+  const [editPasswordValue, setEditPasswordValue] = useState("");
 
   useEffect(() => {
     const unsub = onSnapshot(collection(db, "admins"), (snapshot) => {
@@ -1864,6 +2349,36 @@ function AdminsEditor({ openConfirm }: { openConfirm: (title: string, message: s
     }, (error) => handleFirestoreError(error, OperationType.LIST, "admins"));
     return () => unsub();
   }, []);
+
+  const togglePasswordVisibility = (email: string) => {
+    setVisiblePasswords(prev => ({
+      ...prev,
+      [email]: !prev[email]
+    }));
+  };
+
+  const copyPassword = (password: string, email: string) => {
+    navigator.clipboard.writeText(password);
+    setCopiedEmail(email);
+    toast.success("Password copied to clipboard");
+    setTimeout(() => setCopiedEmail(null), 2000);
+  };
+
+  const handleSavePassword = async (email: string) => {
+    if (!editPasswordValue || editPasswordValue.length < 6) {
+      toast.error("Password must be at least 6 characters");
+      return;
+    }
+    try {
+      await updateDoc(doc(db, "admins", email), { password: editPasswordValue });
+      toast.success("Password updated in admin record");
+      setEditingPasswordEmail(null);
+      setEditPasswordValue("");
+    } catch (err) {
+      handleFirestoreError(err, OperationType.UPDATE, `admins/${email}`);
+      toast.error("Failed to update password");
+    }
+  };
 
   const handleAddAdmin = async (e: FormEvent) => {
     e.preventDefault();
@@ -1878,10 +2393,11 @@ function AdminsEditor({ openConfirm }: { openConfirm: (title: string, message: s
     const email = newEmail.trim().toLowerCase();
     setLoading(true);
     try {
-      // Add to admins collection for rules check FIRST while still logged in as current admin
+      // Add to admins collection with password stored so it appears in the password list
       await setDoc(doc(db, "admins", email), {
         email: email,
         role: "admin",
+        password: newPassword,
         createdAt: new Date().toISOString()
       });
 
@@ -1896,9 +2412,16 @@ function AdminsEditor({ openConfirm }: { openConfirm: (title: string, message: s
         setNewEmail("");
         setNewPassword("");
       } catch (authErr: any) {
-        // If auth creation fails, we should probably remove the admin doc to keep it in sync
-        await deleteDoc(doc(db, "admins", email));
-        throw authErr;
+        if (authErr.code === 'auth/email-already-in-use') {
+          // If auth account already existed, keep the firestore admin record with password
+          toast.success("Admin permissions granted and password record saved!");
+          setNewEmail("");
+          setNewPassword("");
+        } else {
+          // If auth creation fails with other error, clean up
+          await deleteDoc(doc(db, "admins", email));
+          throw authErr;
+        }
       }
     } catch (err: any) {
       console.error(err);
@@ -1929,10 +2452,10 @@ function AdminsEditor({ openConfirm }: { openConfirm: (title: string, message: s
   };
 
   return (
-    <div className="space-y-8 max-w-4xl">
+    <div className="space-y-8 max-w-5xl">
       <div>
         <h2 className="text-2xl font-bold text-slate-900">Manage Admin Accounts</h2>
-        <p className="text-slate-500 mt-1">Create and manage authorized admin users.</p>
+        <p className="text-slate-500 mt-1">Create authorized admin users and view/manage their respective passwords.</p>
       </div>
 
       <div className="bg-white rounded-2xl shadow-sm border border-slate-200 p-6">
@@ -1944,7 +2467,7 @@ function AdminsEditor({ openConfirm }: { openConfirm: (title: string, message: s
               type="email" 
               value={newEmail} 
               onChange={e => setNewEmail(e.target.value)} 
-              className="w-full px-4 py-2 bg-slate-50 border border-slate-200 rounded-xl outline-none focus:ring-2 focus:ring-blue-500 transition" 
+              className="w-full px-4 py-2 bg-slate-50 border border-slate-200 rounded-xl outline-none focus:ring-2 focus:ring-blue-500 transition text-sm" 
               placeholder="admin@vmind.com"
               required
             />
@@ -1952,70 +2475,176 @@ function AdminsEditor({ openConfirm }: { openConfirm: (title: string, message: s
           <div>
             <label className="block text-sm font-bold text-slate-700 mb-1">Initial Password</label>
             <input 
-              type="password" 
+              type="text" 
               value={newPassword} 
               onChange={e => setNewPassword(e.target.value)} 
-              className="w-full px-4 py-2 bg-slate-50 border border-slate-200 rounded-xl outline-none focus:ring-2 focus:ring-blue-500 transition" 
-              placeholder="••••••••"
+              className="w-full px-4 py-2 bg-slate-50 border border-slate-200 rounded-xl outline-none focus:ring-2 focus:ring-blue-500 transition text-sm font-mono" 
+              placeholder="Enter password (min 6 chars)"
               required
             />
           </div>
           <button 
             type="submit" 
             disabled={loading}
-            className="bg-blue-600 text-white font-bold py-2 px-6 rounded-xl hover:bg-blue-700 transition flex items-center justify-center gap-2 disabled:opacity-50"
+            className="bg-blue-600 text-white font-bold py-2.5 px-6 rounded-xl hover:bg-blue-700 transition flex items-center justify-center gap-2 disabled:opacity-50 text-sm shadow-sm"
           >
             <Plus size={18} /> {loading ? "Creating..." : "Add Admin"}
           </button>
         </form>
-        <p className="text-xs text-slate-400 mt-4 italic">
-          * Note: New admins must use their email and the initial password you provide to sign in.
+        <p className="text-xs text-slate-400 mt-3 italic">
+          * Passwords configured here are saved with the admin record and displayed in the table below for quick management.
         </p>
       </div>
 
       <div className="bg-white rounded-2xl shadow-sm border border-slate-200 overflow-hidden">
-        <table className="w-full text-left border-collapse">
-          <thead>
-            <tr className="bg-slate-50 border-b border-slate-200 text-slate-600 text-sm">
-              <th className="p-4 font-bold">Admin Email</th>
-              <th className="p-4 font-bold">Role</th>
-              <th className="p-4 font-bold">Created At</th>
-              <th className="p-4 font-bold">Actions</th>
-            </tr>
-          </thead>
-          <tbody>
-            {admins.map(admin => (
-              <tr key={admin.id} className="border-b border-slate-100 hover:bg-slate-50 transition">
-                <td className="p-4 font-medium text-slate-900">{admin.email}</td>
-                <td className="p-4">
-                  <span className="bg-blue-100 text-blue-700 px-2 py-1 rounded-md text-xs font-bold uppercase tracking-wider">
-                    {admin.role}
-                  </span>
-                </td>
-                <td className="p-4 text-slate-500 text-sm">
-                  {admin.createdAt ? new Date(admin.createdAt).toLocaleDateString() : 'N/A'}
-                </td>
-                <td className="p-4">
-                  {admin.email !== "manojprajapatiworks@gmail.com" && (
-                    <button 
-                      onClick={() => handleDeleteAdmin(admin.email)} 
-                      className="p-2 text-red-600 hover:bg-red-50 rounded-lg transition"
-                    >
-                      <Trash2 size={18} />
-                    </button>
-                  )}
-                </td>
+        <div className="p-4 border-b border-slate-100 flex justify-between items-center bg-slate-50/50">
+          <h3 className="font-bold text-slate-900 text-sm">Authorized Admin Logins & Passwords</h3>
+          <span className="text-xs text-slate-500">{admins.length} Total Accounts</span>
+        </div>
+        <div className="overflow-x-auto">
+          <table className="w-full text-left border-collapse">
+            <thead>
+              <tr className="bg-slate-50 border-b border-slate-200 text-slate-600 text-xs font-bold uppercase tracking-wider">
+                <th className="p-4">Admin Email</th>
+                <th className="p-4">Role</th>
+                <th className="p-4">Password</th>
+                <th className="p-4">Created At</th>
+                <th className="p-4 text-right">Actions</th>
               </tr>
-            ))}
-            {admins.length === 0 && (
-              <tr>
-                <td colSpan={4} className="p-8 text-center text-slate-400 italic">
-                  No additional admins configured.
-                </td>
-              </tr>
-            )}
-          </tbody>
-        </table>
+            </thead>
+            <tbody className="divide-y divide-slate-100">
+              {admins.map(admin => {
+                const isEditingThisPassword = editingPasswordEmail === admin.email;
+                const isPasswordVisible = !!visiblePasswords[admin.email];
+                const hasPassword = !!admin.password;
+                const isSuperAdmin = admin.email === "manojprajapatiworks@gmail.com";
+
+                return (
+                  <tr key={admin.id} className="hover:bg-slate-50/80 transition">
+                    <td className="p-4 font-medium text-slate-900 text-sm">
+                      <div className="flex items-center gap-2">
+                        <Mail size={15} className="text-slate-400 shrink-0" />
+                        <span>{admin.email}</span>
+                      </div>
+                    </td>
+                    <td className="p-4">
+                      <span className={`px-2.5 py-1 rounded-md text-xs font-bold uppercase tracking-wider ${
+                        isSuperAdmin || admin.role === 'superadmin' 
+                          ? 'bg-purple-100 text-purple-700 border border-purple-200' 
+                          : 'bg-blue-100 text-blue-700 border border-blue-200'
+                      }`}>
+                        {admin.role || (isSuperAdmin ? 'superadmin' : 'admin')}
+                      </span>
+                    </td>
+                    
+                    {/* Password Column */}
+                    <td className="p-4">
+                      {isEditingThisPassword ? (
+                        <div className="flex items-center gap-1.5">
+                          <input 
+                            type="text" 
+                            value={editPasswordValue}
+                            onChange={(e) => setEditPasswordValue(e.target.value)}
+                            placeholder="New password"
+                            className="px-2.5 py-1 text-xs border border-blue-400 rounded-lg outline-none bg-white font-mono w-32 focus:ring-1 focus:ring-blue-500"
+                            autoFocus
+                          />
+                          <button
+                            onClick={() => handleSavePassword(admin.email)}
+                            className="p-1 text-green-600 hover:bg-green-50 rounded transition"
+                            title="Save Password"
+                          >
+                            <Check size={16} />
+                          </button>
+                          <button
+                            onClick={() => {
+                              setEditingPasswordEmail(null);
+                              setEditPasswordValue("");
+                            }}
+                            className="p-1 text-slate-400 hover:bg-slate-100 rounded transition"
+                            title="Cancel"
+                          >
+                            <X size={16} />
+                          </button>
+                        </div>
+                      ) : (
+                        <div className="flex items-center gap-2">
+                          {hasPassword ? (
+                            <>
+                              <div className="font-mono text-xs bg-slate-100 px-2.5 py-1 rounded-lg border border-slate-200 min-w-[100px] select-all flex items-center justify-between">
+                                <span>{isPasswordVisible ? admin.password : "••••••••"}</span>
+                              </div>
+                              <button 
+                                onClick={() => togglePasswordVisibility(admin.email)} 
+                                className="p-1.5 text-slate-500 hover:text-slate-800 hover:bg-slate-100 rounded-lg transition"
+                                title={isPasswordVisible ? "Hide Password" : "Show Password"}
+                              >
+                                {isPasswordVisible ? <EyeOff size={15} /> : <Eye size={15} />}
+                              </button>
+                              <button 
+                                onClick={() => copyPassword(admin.password, admin.email)} 
+                                className="p-1.5 text-slate-500 hover:text-blue-600 hover:bg-blue-50 rounded-lg transition"
+                                title="Copy Password"
+                              >
+                                {copiedEmail === admin.email ? <Check size={15} className="text-green-600" /> : <Copy size={15} />}
+                              </button>
+                              <button 
+                                onClick={() => {
+                                  setEditingPasswordEmail(admin.email);
+                                  setEditPasswordValue(admin.password || "");
+                                }}
+                                className="p-1.5 text-slate-400 hover:text-blue-600 hover:bg-blue-50 rounded-lg transition"
+                                title="Edit Password"
+                              >
+                                <Edit size={14} />
+                              </button>
+                            </>
+                          ) : (
+                            <div className="flex items-center gap-2">
+                              <span className="text-xs text-slate-400 italic">Not set</span>
+                              <button
+                                onClick={() => {
+                                  setEditingPasswordEmail(admin.email);
+                                  setEditPasswordValue("");
+                                }}
+                                className="text-xs text-blue-600 hover:underline font-medium inline-flex items-center gap-1"
+                              >
+                                <Plus size={12} /> Set Password
+                              </button>
+                            </div>
+                          )}
+                        </div>
+                      )}
+                    </td>
+
+                    <td className="p-4 text-slate-500 text-xs">
+                      {admin.createdAt ? new Date(admin.createdAt).toLocaleDateString() : 'Initial'}
+                    </td>
+                    
+                    <td className="p-4 text-right">
+                      {!isSuperAdmin && (
+                        <button 
+                          onClick={() => handleDeleteAdmin(admin.email)} 
+                          className="p-1.5 text-red-600 hover:bg-red-50 rounded-lg transition inline-flex items-center gap-1 text-xs"
+                          title="Remove Admin"
+                        >
+                          <Trash2 size={16} />
+                        </button>
+                      )}
+                    </td>
+                  </tr>
+                );
+              })}
+              {admins.length === 0 && (
+                <tr>
+                  <td colSpan={5} className="p-8 text-center text-slate-400 italic">
+                    No additional admins configured.
+                  </td>
+                </tr>
+              )}
+            </tbody>
+          </table>
+        </div>
       </div>
     </div>
   );
