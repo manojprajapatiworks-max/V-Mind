@@ -11,6 +11,7 @@ import { motion, AnimatePresence } from "framer-motion";
 import ConfirmDialog from "../components/ConfirmDialog";
 import { HERO_BACKGROUNDS, getHeroBackground } from "../constants/heroBackgrounds";
 import { getDirectImageUrl } from "../lib/utils";
+import { SmartImage } from "../components/SmartImage";
 
 export default function Admin() {
   const [user, setUser] = useState<any>(null);
@@ -1087,20 +1088,22 @@ function GalleryEditor({ openConfirm }: { openConfirm: (title: string, message: 
           </div>
           <div className="md:col-span-2">
             <label className="block text-sm font-medium text-slate-700 mb-1">Image URL</label>
-            <input required type="url" value={form.imageUrl} onChange={e => setForm({...form, imageUrl: e.target.value})} className="w-full px-3 py-2 border border-slate-300 rounded-lg outline-none focus:ring-2 focus:ring-blue-500" />
+            <input required type="url" value={form.imageUrl} onChange={e => setForm({...form, imageUrl: e.target.value})} placeholder="https://drive.google.com/... or https://images.unsplash.com/..." className="w-full px-3 py-2 border border-slate-300 rounded-lg outline-none focus:ring-2 focus:ring-blue-500 text-sm" />
+            <p className="text-xs text-slate-400 mt-1">Supports Google Drive, Dropbox, OneDrive, Imgur, and direct image links.</p>
             {form.imageUrl && (
-              <div className="mt-2 aspect-video w-32 rounded-lg overflow-hidden border border-slate-200">
-                <img src={getDirectImageUrl(form.imageUrl)} alt="Preview" className="w-full h-full object-cover" referrerPolicy="no-referrer" />
+              <div className="mt-2 aspect-video w-36 rounded-lg overflow-hidden border border-slate-200 bg-slate-50 relative">
+                <SmartImage src={form.imageUrl} alt="Preview" className="w-full h-full object-cover" />
+                <span className="absolute bottom-1 right-1 bg-black/60 text-white text-[9px] px-1 py-0.5 rounded">Preview</span>
               </div>
             )}
           </div>
           <div>
             <label className="block text-sm font-medium text-slate-700 mb-1">Category</label>
-            <input type="text" value={form.category} onChange={e => setForm({...form, category: e.target.value})} className="w-full px-3 py-2 border border-slate-300 rounded-lg outline-none focus:ring-2 focus:ring-blue-500" />
+            <input type="text" value={form.category} onChange={e => setForm({...form, category: e.target.value})} className="w-full px-3 py-2 border border-slate-300 rounded-lg outline-none focus:ring-2 focus:ring-blue-500 text-sm" />
           </div>
           <div>
             <label className="block text-sm font-medium text-slate-700 mb-1">Order</label>
-            <input type="number" value={form.order} onChange={e => setForm({...form, order: Number(e.target.value)})} className="w-full px-3 py-2 border border-slate-300 rounded-lg outline-none focus:ring-2 focus:ring-blue-500" />
+            <input type="number" value={form.order} onChange={e => setForm({...form, order: Number(e.target.value)})} className="w-full px-3 py-2 border border-slate-300 rounded-lg outline-none focus:ring-2 focus:ring-blue-500 text-sm" />
           </div>
           <div className="md:col-span-2 flex gap-3">
             <button type="submit" className="bg-blue-600 text-white px-6 py-2 rounded-lg font-medium hover:bg-blue-700 transition flex items-center gap-2">
@@ -1114,8 +1117,8 @@ function GalleryEditor({ openConfirm }: { openConfirm: (title: string, message: 
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
         {items.map(item => (
           <div key={item.id} className="bg-white rounded-2xl shadow-sm border border-slate-200 overflow-hidden group">
-            <div className="aspect-video relative overflow-hidden">
-              <img src={getDirectImageUrl(item.imageUrl)} alt={item.title_en} className="w-full h-full object-cover transition-transform group-hover:scale-105" referrerPolicy="no-referrer" />
+            <div className="aspect-video relative overflow-hidden bg-slate-100">
+              <SmartImage src={item.imageUrl} alt={item.title_en} className="w-full h-full object-cover transition-transform group-hover:scale-105" />
               <div className="absolute top-2 right-2 flex gap-1">
                 <button onClick={() => { setEditingId(item.id); setForm({...item}); }} className="p-2 bg-white/90 text-blue-600 rounded-lg shadow-sm hover:bg-white transition"><Edit size={16}/></button>
                 <button onClick={() => handleDelete(item.id)} className="p-2 bg-white/90 text-red-600 rounded-lg shadow-sm hover:bg-white transition"><Trash2 size={16}/></button>
@@ -1549,14 +1552,10 @@ function ServicesEditor({ openConfirm }: { openConfirm: (title: string, message:
               {/* Live Preview */}
               <div className="h-28 rounded-xl border border-slate-200 bg-slate-50 overflow-hidden flex items-center justify-center relative">
                 {form.imageUrl ? (
-                  <img 
-                    src={getDirectImageUrl(form.imageUrl)} 
+                  <SmartImage 
+                    src={form.imageUrl} 
                     alt="Service Preview" 
                     className="w-full h-full object-cover" 
-                    referrerPolicy="no-referrer" 
-                    onError={(e) => {
-                      (e.target as HTMLElement).style.display = 'none';
-                    }}
                   />
                 ) : (
                   <div className="text-center p-2 text-slate-400">
@@ -1668,11 +1667,10 @@ function ServicesEditor({ openConfirm }: { openConfirm: (title: string, message:
               {/* Right Side Image Display */}
               <div className="w-full md:w-56 h-36 rounded-xl overflow-hidden border border-slate-200 bg-slate-50 shrink-0 relative group shadow-sm">
                 {s.imageUrl ? (
-                  <img 
-                    src={getDirectImageUrl(s.imageUrl)} 
+                  <SmartImage 
+                    src={s.imageUrl} 
                     alt={s.title_en || "Service image"} 
                     className="w-full h-full object-cover transition-transform group-hover:scale-105" 
-                    referrerPolicy="no-referrer"
                   />
                 ) : (
                   <div className="w-full h-full flex flex-col items-center justify-center text-slate-400 p-4 text-center">
@@ -1723,11 +1721,10 @@ function ServicesEditor({ openConfirm }: { openConfirm: (title: string, message:
                   <td className="p-4">
                     <div className="w-24 h-16 rounded-lg overflow-hidden border border-slate-200 bg-slate-100 flex items-center justify-center">
                       {s.imageUrl ? (
-                        <img 
-                          src={getDirectImageUrl(s.imageUrl)} 
+                        <SmartImage 
+                          src={s.imageUrl} 
                           alt={s.title_en} 
                           className="w-full h-full object-cover" 
-                          referrerPolicy="no-referrer" 
                         />
                       ) : (
                         <span className="text-[11px] text-slate-400">No Image</span>

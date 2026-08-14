@@ -5,7 +5,7 @@ import { motion } from "framer-motion";
 import { Zap, ShieldCheck, Network, Cable, Server, Phone, Video, AlertTriangle } from "lucide-react";
 import { handleFirestoreError, OperationType } from "../lib/firestore-error";
 import { useLanguage } from "../contexts/LanguageContext";
-import { getDirectImageUrl } from "../lib/utils";
+import { SmartImage } from "../components/SmartImage";
 
 const iconMap: Record<string, any> = {
   Zap, ShieldCheck, Network, Cable, Server, Phone, Video, AlertTriangle
@@ -101,11 +101,10 @@ export default function Services() {
                               </div>
                               {service.imageUrl && (
                                 <div className="w-24 h-24 sm:w-28 sm:h-28 rounded-2xl overflow-hidden border-2 border-white shadow-md shrink-0 bg-slate-100">
-                                  <img 
-                                    src={getDirectImageUrl(service.imageUrl)} 
+                                  <SmartImage 
+                                    src={service.imageUrl} 
                                     alt={service.title_en || "Service"} 
                                     className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-500" 
-                                    referrerPolicy="no-referrer"
                                   />
                                 </div>
                               )}

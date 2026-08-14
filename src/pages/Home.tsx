@@ -7,7 +7,7 @@ import { db } from "../firebase";
 import { handleFirestoreError, OperationType } from "../lib/firestore-error";
 import { useLanguage } from "../contexts/LanguageContext";
 import { getHeroBackground } from "../constants/heroBackgrounds";
-import { getDirectImageUrl } from "../lib/utils";
+import { SmartImage } from "../components/SmartImage";
 import HeroParticles from "../components/HeroParticles";
 import HeroOrbs from "../components/HeroOrbs";
 
@@ -207,11 +207,10 @@ export default function Home() {
                       </div>
                       {service.imageUrl && (
                         <div className="w-20 h-20 rounded-2xl overflow-hidden border border-slate-200 shadow-sm shrink-0 bg-slate-100">
-                          <img 
-                            src={getDirectImageUrl(service.imageUrl)} 
+                          <SmartImage 
+                            src={service.imageUrl} 
                             alt={service.title_en || "Service"} 
                             className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-500" 
-                            referrerPolicy="no-referrer"
                           />
                         </div>
                       )}
@@ -262,13 +261,12 @@ export default function Home() {
                 initial={{ opacity: 0, scale: 0.95 }}
                 whileInView={{ opacity: 1, scale: 1 }}
                 viewport={{ once: true }}
-                className="group relative aspect-[4/3] rounded-3xl overflow-hidden shadow-lg"
+                className="group relative aspect-[4/3] rounded-3xl overflow-hidden shadow-lg bg-slate-100"
               >
-                <img 
-                  src={getDirectImageUrl(item.imageUrl)} 
+                <SmartImage 
+                  src={item.imageUrl} 
                   alt={item.title_en} 
                   className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-110" 
-                  referrerPolicy="no-referrer"
                 />
                 <div className="absolute inset-0 bg-gradient-to-t from-slate-900/80 via-slate-900/20 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300 flex flex-col justify-end p-8">
                   <p className="text-blue-400 text-sm font-bold uppercase tracking-widest mb-2">{item.category}</p>

@@ -4,7 +4,7 @@ import { collection, onSnapshot, query, orderBy } from "firebase/firestore";
 import { db } from "../firebase";
 import { handleFirestoreError, OperationType } from "../lib/firestore-error";
 import { useLanguage } from "../contexts/LanguageContext";
-import { getDirectImageUrl } from "../lib/utils";
+import { SmartImage } from "../components/SmartImage";
 
 export default function Projects() {
   const { language } = useLanguage();
@@ -55,11 +55,10 @@ export default function Projects() {
               viewport={{ once: true }}
               className="group relative aspect-[4/3] rounded-3xl overflow-hidden shadow-lg bg-white"
             >
-              <img 
-                src={getDirectImageUrl(item.imageUrl)} 
+              <SmartImage 
+                src={item.imageUrl} 
                 alt={item.title_en} 
                 className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-110" 
-                referrerPolicy="no-referrer"
               />
               <div className="absolute inset-0 bg-gradient-to-t from-slate-900/80 via-slate-900/20 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300 flex flex-col justify-end p-8">
                 <p className="text-blue-400 text-sm font-bold uppercase tracking-widest mb-2">{item.category}</p>
