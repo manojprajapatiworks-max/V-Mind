@@ -1,7 +1,7 @@
 import { useState, useEffect, FormEvent } from "react";
 import { collection, addDoc, doc, onSnapshot } from "firebase/firestore";
 import { db } from "../firebase";
-import { Phone, Mail, MapPin, MessageCircle, Send } from "lucide-react";
+import { Phone, Mail, MapPin, MessageCircle, Send, ExternalLink, Clock, Navigation } from "lucide-react";
 import { handleFirestoreError, OperationType } from "../lib/firestore-error";
 import { motion } from "framer-motion";
 import { toast } from "sonner";
@@ -79,7 +79,7 @@ export default function Contact() {
                     <div className="w-14 h-14 bg-blue-50 text-blue-600 rounded-2xl flex items-center justify-center shrink-0 border border-blue-100 group-hover/item:bg-blue-600 group-hover/item:text-white transition-colors shadow-sm">
                       <Phone size={24} />
                     </div>
-                    <div className="pt-1">
+                    <div className="pt-1 flex-1">
                       <h3 className="text-sm font-bold text-slate-400 uppercase tracking-wider mb-1">Phone</h3>
                       <a href={`tel:${settings.phoneNumber}`} className="text-lg font-semibold text-slate-900 hover:text-blue-600 transition-colors">
                         {settings.phoneNumber}
@@ -88,15 +88,63 @@ export default function Contact() {
                   </div>
                 )}
 
-                {settings.lineId && (
+                {/* LINE App Option */}
+                {((settings.messagingPlatform === 'line' || settings.messagingPlatform === 'both' || (!settings.messagingPlatform && settings.lineId)) && settings.lineId) && (
                   <div className="flex items-start gap-5 group/item">
                     <div className="w-14 h-14 bg-[#00B900]/10 text-[#00B900] rounded-2xl flex items-center justify-center shrink-0 border border-[#00B900]/20 group-hover/item:bg-[#00B900] group-hover/item:text-white transition-colors shadow-sm">
                       <MessageCircle size={24} />
                     </div>
-                    <div className="pt-1">
-                      <h3 className="text-sm font-bold text-slate-400 uppercase tracking-wider mb-1">LINE App</h3>
-                      <a href={`https://line.me/ti/p/~${settings.lineId}`} target="_blank" rel="noopener noreferrer" className="text-lg font-semibold text-slate-900 hover:text-[#00B900] transition-colors">
+                    <div className="pt-1 flex-1">
+                      <div className="flex items-center justify-between gap-2 mb-1">
+                        <h3 className="text-sm font-bold text-slate-400 uppercase tracking-wider">LINE App</h3>
+                        <a 
+                          href={settings.lineId.startsWith("http") ? settings.lineId : `https://line.me/ti/p/~${settings.lineId}`} 
+                          target="_blank" 
+                          rel="noopener noreferrer" 
+                          className="inline-flex items-center gap-1 px-2.5 py-0.5 bg-[#00B900]/10 hover:bg-[#00B900] text-[#00B900] hover:text-white text-xs font-semibold rounded-md transition-colors"
+                        >
+                          <span>Chat</span>
+                          <ExternalLink size={10} />
+                        </a>
+                      </div>
+                      <a 
+                        href={settings.lineId.startsWith("http") ? settings.lineId : `https://line.me/ti/p/~${settings.lineId}`} 
+                        target="_blank" 
+                        rel="noopener noreferrer" 
+                        className="text-lg font-semibold text-slate-900 hover:text-[#00B900] transition-colors"
+                      >
                         {settings.lineId}
+                      </a>
+                    </div>
+                  </div>
+                )}
+
+                {/* WhatsApp Option */}
+                {((settings.messagingPlatform === 'whatsapp' || settings.messagingPlatform === 'both' || (!settings.messagingPlatform && settings.whatsappNumber)) && settings.whatsappNumber) && (
+                  <div className="flex items-start gap-5 group/item">
+                    <div className="w-14 h-14 bg-[#25D366]/10 text-[#25D366] rounded-2xl flex items-center justify-center shrink-0 border border-[#25D366]/20 group-hover/item:bg-[#25D366] group-hover/item:text-white transition-colors shadow-sm">
+                      <MessageCircle size={24} />
+                    </div>
+                    <div className="pt-1 flex-1">
+                      <div className="flex items-center justify-between gap-2 mb-1">
+                        <h3 className="text-sm font-bold text-slate-400 uppercase tracking-wider">WhatsApp</h3>
+                        <a 
+                          href={settings.whatsappNumber.startsWith("http") ? settings.whatsappNumber : `https://wa.me/${settings.whatsappNumber.replace(/[^0-9]/g, '')}`} 
+                          target="_blank" 
+                          rel="noopener noreferrer" 
+                          className="inline-flex items-center gap-1 px-2.5 py-0.5 bg-[#25D366]/10 hover:bg-[#25D366] text-[#25D366] hover:text-white text-xs font-semibold rounded-md transition-colors"
+                        >
+                          <span>Chat</span>
+                          <ExternalLink size={10} />
+                        </a>
+                      </div>
+                      <a 
+                        href={settings.whatsappNumber.startsWith("http") ? settings.whatsappNumber : `https://wa.me/${settings.whatsappNumber.replace(/[^0-9]/g, '')}`} 
+                        target="_blank" 
+                        rel="noopener noreferrer" 
+                        className="text-lg font-semibold text-slate-900 hover:text-[#25D366] transition-colors"
+                      >
+                        {settings.whatsappNumber}
                       </a>
                     </div>
                   </div>
@@ -107,7 +155,7 @@ export default function Contact() {
                     <div className="w-14 h-14 bg-cyan-50 text-cyan-600 rounded-2xl flex items-center justify-center shrink-0 border border-cyan-100 group-hover/item:bg-cyan-500 group-hover/item:text-white transition-colors shadow-sm">
                       <Mail size={24} />
                     </div>
-                    <div className="pt-1">
+                    <div className="pt-1 flex-1">
                       <h3 className="text-sm font-bold text-slate-400 uppercase tracking-wider mb-1">Email</h3>
                       <a href={`mailto:${settings.email}`} className="text-lg font-semibold text-slate-900 hover:text-cyan-600 transition-colors break-all">
                         {settings.email}
@@ -117,13 +165,28 @@ export default function Contact() {
                 )}
 
                 {settings.address && (
-                  <div className="flex items-start gap-5 group/item">
-                    <div className="w-14 h-14 bg-purple-50 text-purple-600 rounded-2xl flex items-center justify-center shrink-0 border border-purple-100 group-hover/item:bg-purple-600 group-hover/item:text-white transition-colors shadow-sm">
-                      <MapPin size={24} />
+                  <div className="flex items-start gap-4 sm:gap-5 group/item">
+                    <div className="w-12 h-12 sm:w-14 sm:h-14 bg-purple-50 text-purple-600 rounded-2xl flex items-center justify-center shrink-0 border border-purple-100 group-hover/item:bg-purple-600 group-hover/item:text-white transition-colors shadow-sm">
+                      <MapPin size={22} className="sm:size-[24px]" />
                     </div>
-                    <div className="pt-1">
-                      <h3 className="text-sm font-bold text-slate-400 uppercase tracking-wider mb-1">Address</h3>
-                      <p className="text-lg font-medium text-slate-900 leading-relaxed">
+                    <div className="pt-0.5 sm:pt-1 flex-1 min-w-0">
+                      <div className="flex items-center justify-between gap-2 mb-1">
+                        <h3 className="text-xs sm:text-sm font-bold text-slate-400 uppercase tracking-wider">Address</h3>
+                        {(settings.googleMapUrl || settings.address) && (
+                          <a
+                            href={settings.googleMapUrl || `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(settings.address)}`}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            title="Open in Google Maps"
+                            className="inline-flex items-center gap-1.5 px-2.5 py-1 bg-purple-50 hover:bg-purple-600 text-purple-700 hover:text-white text-xs font-semibold rounded-lg transition-colors border border-purple-200 shadow-xs"
+                          >
+                            <Navigation size={12} />
+                            <span>Map</span>
+                            <ExternalLink size={10} />
+                          </a>
+                        )}
+                      </div>
+                      <p className="text-base sm:text-lg font-medium text-slate-900 leading-relaxed">
                         {settings.address}
                       </p>
                     </div>
@@ -132,24 +195,31 @@ export default function Contact() {
               </div>
             </div>
             
-            {/* Business Hours Card (Optional/Static for now) */}
-            <div className="bg-gradient-to-br from-slate-900 to-slate-800 rounded-3xl p-8 text-white shadow-xl">
-              <h3 className="text-xl font-display font-bold mb-4">Business Hours</h3>
-              <div className="space-y-3 text-slate-300">
-                <div className="flex justify-between border-b border-slate-700 pb-2">
-                  <span>Monday - Friday</span>
-                  <span className="font-medium text-white">8:00 AM - 6:00 PM</span>
+            {/* Business Hours Card (Controlled by Admin Panel Option) */}
+            {settings.showBusinessHours !== false && (
+              <div className="bg-gradient-to-br from-slate-900 to-slate-800 rounded-3xl p-8 text-white shadow-xl">
+                <div className="flex items-center gap-3 mb-5">
+                  <div className="p-2 rounded-xl bg-white/10 text-cyan-400">
+                    <Clock size={20} />
+                  </div>
+                  <h3 className="text-xl font-display font-bold">Business Hours</h3>
                 </div>
-                <div className="flex justify-between border-b border-slate-700 pb-2">
-                  <span>Saturday</span>
-                  <span className="font-medium text-white">9:00 AM - 2:00 PM</span>
-                </div>
-                <div className="flex justify-between">
-                  <span>Sunday</span>
-                  <span className="font-medium text-slate-500">Closed</span>
+                <div className="space-y-3 text-slate-300">
+                  <div className="flex justify-between border-b border-slate-700/80 pb-2.5">
+                    <span className="text-slate-400">Monday - Friday</span>
+                    <span className="font-medium text-white">{settings.businessHoursWeekdays || "8:00 AM - 6:00 PM"}</span>
+                  </div>
+                  <div className="flex justify-between border-b border-slate-700/80 pb-2.5">
+                    <span className="text-slate-400">Saturday</span>
+                    <span className="font-medium text-white">{settings.businessHoursSaturday || "9:00 AM - 2:00 PM"}</span>
+                  </div>
+                  <div className="flex justify-between">
+                    <span className="text-slate-400">Sunday</span>
+                    <span className="font-medium text-slate-400">{settings.businessHoursSunday || "Closed"}</span>
+                  </div>
                 </div>
               </div>
-            </div>
+            )}
           </motion.div>
 
           {/* Contact Form */}

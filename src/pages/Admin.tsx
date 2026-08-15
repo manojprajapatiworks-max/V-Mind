@@ -4,7 +4,7 @@ import { getAuth, signOut, onAuthStateChanged, signInWithEmailAndPassword, creat
 import { doc, setDoc, onSnapshot, collection, addDoc, updateDoc, deleteDoc, query, orderBy, where, getDocs, getDoc } from "firebase/firestore";
 import { auth, db } from "../firebase";
 import firebaseConfig from "../../firebase-applet-config.json";
-import { LogOut, Plus, Edit, Trash2, Save, X, LayoutDashboard, Settings, List, MessageSquare, FolderKanban, FileUp, Link as LinkIcon, Image as ImageIcon, CheckCircle, BarChart3, Download, HelpCircle, Info, Zap, Briefcase, ShieldCheck, Users, TrendingUp, Lock, Mail, History, Eye, EyeOff, Copy, Check, Upload } from "lucide-react";
+import { LogOut, Plus, Edit, Trash2, Save, X, LayoutDashboard, Settings, List, MessageSquare, FolderKanban, FileUp, Link as LinkIcon, Image as ImageIcon, CheckCircle, BarChart3, Download, HelpCircle, Info, Zap, Briefcase, ShieldCheck, Users, TrendingUp, Lock, Mail, History, Eye, EyeOff, Copy, Check, Upload, MapPin, ExternalLink, Clock, Phone, MessageCircle, Navigation, Globe, Menu, ChevronRight } from "lucide-react";
 import { handleFirestoreError, OperationType } from "../lib/firestore-error";
 import { toast } from "sonner";
 import { motion, AnimatePresence } from "framer-motion";
@@ -17,6 +17,7 @@ export default function Admin() {
   const [user, setUser] = useState<any>(null);
   const [isAdminUser, setIsAdminUser] = useState<boolean | null>(null);
   const [activeTab, setActiveTab] = useState("dashboard");
+  const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const [loading, setLoading] = useState(true);
   
   // Login state
@@ -474,10 +475,139 @@ export default function Admin() {
     }
   ];
 
+  const currentItem = menuGroups.flatMap(g => g.items).find(i => i.id === activeTab) || { id: "dashboard", label: "Dashboard", icon: LayoutDashboard };
+  const CurrentIcon = currentItem.icon;
+
   return (
     <div className="min-h-screen bg-slate-50 flex flex-col md:flex-row">
-      {/* Sidebar */}
-      <div className="w-full md:w-64 bg-slate-900 text-white flex flex-col h-screen sticky top-0">
+      {/* Mobile Top Header */}
+      <div className="md:hidden bg-slate-900 text-white sticky top-0 z-30 px-4 py-3 flex items-center justify-between border-b border-slate-800 shadow-md">
+        <div className="flex items-center gap-2.5">
+          <div className="p-1.5 bg-blue-600/20 text-blue-400 rounded-lg">
+            <Zap size={18} />
+          </div>
+          <div>
+            <h2 className="text-base font-bold tracking-tight text-white leading-tight">V Mind Admin</h2>
+            <p className="text-[11px] text-slate-400 truncate max-w-[170px]">{user.email}</p>
+          </div>
+        </div>
+
+        <button
+          type="button"
+          onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
+          className="flex items-center gap-2 px-3 py-2 bg-slate-800 hover:bg-slate-700 active:bg-slate-600 rounded-xl text-white text-xs font-semibold border border-slate-700 transition-colors min-h-[40px]"
+          aria-label="Toggle Admin Menu"
+        >
+          {isMobileMenuOpen ? <X size={18} className="text-red-400" /> : <Menu size={18} className="text-cyan-400" />}
+          <span>{isMobileMenuOpen ? "Close" : "Menu"}</span>
+        </button>
+      </div>
+
+      {/* Mobile Breadcrumb / Current Tab Quick Bar */}
+      <div className="md:hidden bg-white border-b border-slate-200 px-4 py-2.5 flex items-center justify-between shadow-xs">
+        <div className="flex items-center gap-2 text-xs">
+          <span className="text-slate-400 font-medium">Viewing:</span>
+          <span className="inline-flex items-center gap-1.5 px-2.5 py-1 bg-blue-50 text-blue-700 font-bold rounded-lg border border-blue-100">
+            <CurrentIcon size={14} />
+            {currentItem.label}
+          </span>
+        </div>
+        <button
+          type="button"
+          onClick={() => setIsMobileMenuOpen(true)}
+          className="text-xs text-blue-600 font-semibold hover:underline flex items-center gap-1 py-1 px-2 rounded hover:bg-blue-50 transition"
+        >
+          <span>Change Tab</span>
+          <ChevronRight size={12} />
+        </button>
+      </div>
+
+      {/* Mobile Drawer Backdrop */}
+      <AnimatePresence>
+        {isMobileMenuOpen && (
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            transition={{ duration: 0.2 }}
+            onClick={() => setIsMobileMenuOpen(false)}
+            className="fixed inset-0 bg-slate-950/70 backdrop-blur-xs z-40 md:hidden"
+          />
+        )}
+      </AnimatePresence>
+
+      {/* Mobile Off-canvas Drawer Navigation */}
+      <div
+        className={`fixed inset-y-0 left-0 z-50 w-72 max-w-[85vw] bg-slate-900 text-white flex flex-col shadow-2xl transform transition-transform duration-300 ease-in-out md:hidden ${
+          isMobileMenuOpen ? "translate-x-0" : "-translate-x-full"
+        }`}
+      >
+        <div className="p-4 border-b border-slate-800 flex items-center justify-between">
+          <div className="flex items-center gap-2">
+            <Zap size={20} className="text-blue-400" />
+            <h2 className="text-lg font-bold">Admin Navigation</h2>
+          </div>
+          <button
+            type="button"
+            onClick={() => setIsMobileMenuOpen(false)}
+            className="p-1.5 text-slate-400 hover:text-white rounded-lg hover:bg-slate-800 transition"
+            aria-label="Close drawer"
+          >
+            <X size={20} />
+          </button>
+        </div>
+
+        <nav className="flex-1 p-4 space-y-5 overflow-y-auto">
+          {menuGroups.map((group) => (
+            <div key={group.title}>
+              <h3 className="text-[10px] uppercase tracking-wider text-slate-400 font-bold mb-2 px-3">
+                {group.title}
+              </h3>
+              <div className="space-y-1">
+                {group.items.map((item) => {
+                  const Icon = item.icon;
+                  const isSelected = activeTab === item.id;
+                  return (
+                    <button
+                      key={item.id}
+                      type="button"
+                      onClick={() => {
+                        setActiveTab(item.id);
+                        setIsMobileMenuOpen(false);
+                        window.scrollTo({ top: 0, behavior: "smooth" });
+                      }}
+                      className={`w-full flex items-center justify-between px-3.5 py-3 rounded-xl transition text-sm font-medium min-h-[44px] ${
+                        isSelected
+                          ? "bg-blue-600 text-white font-bold shadow-lg shadow-blue-600/30"
+                          : "text-slate-300 hover:bg-slate-800 hover:text-white active:bg-slate-800"
+                      }`}
+                    >
+                      <div className="flex items-center gap-3">
+                        <Icon size={18} className={isSelected ? "text-white" : "text-slate-400"} />
+                        <span>{item.label}</span>
+                      </div>
+                      {isSelected && <span className="w-2 h-2 rounded-full bg-white animate-pulse" />}
+                    </button>
+                  );
+                })}
+              </div>
+            </div>
+          ))}
+        </nav>
+
+        <div className="p-4 border-t border-slate-800 bg-slate-950/40">
+          <button
+            type="button"
+            onClick={handleLogout}
+            className="w-full flex items-center justify-center gap-2 px-4 py-3 rounded-xl text-red-400 hover:bg-red-500/10 hover:text-red-300 transition text-sm font-semibold border border-red-900/30 min-h-[44px]"
+          >
+            <LogOut size={18} /> Sign Out
+          </button>
+        </div>
+      </div>
+
+      {/* Desktop Permanent Sidebar */}
+      <div className="hidden md:flex md:w-64 bg-slate-900 text-white flex-col h-screen sticky top-0 shrink-0 shadow-xl">
         <div className="p-6 border-b border-slate-800">
           <h2 className="text-xl font-bold flex items-center gap-2">
             <Zap size={20} className="text-blue-400" /> V Mind Admin
@@ -512,8 +642,8 @@ export default function Admin() {
         </div>
       </div>
 
-      {/* Main Content */}
-      <div className="flex-1 p-4 md:p-8 overflow-y-auto">
+      {/* Main Content Area */}
+      <div className="flex-1 min-w-0 p-3 sm:p-5 md:p-8 overflow-y-auto max-w-full">
         {activeTab === "dashboard" && <DashboardStats setActiveTab={setActiveTab} />}
         {activeTab === "hero" && <HeroEditor />}
         {activeTab === "stats" && <StatsEditor />}
@@ -910,18 +1040,67 @@ function StatsEditor() {
 
 function SettingsEditor() {
   const [settings, setSettings] = useState<any>({
-    companyName: "", logoUrl: "", phoneNumber: "", lineId: "", email: "", address: "", aboutText: ""
+    companyName: "",
+    logoUrl: "",
+    phoneNumber: "",
+    lineId: "",
+    whatsappNumber: "",
+    messagingPlatform: "both",
+    email: "",
+    address: "",
+    googleMapUrl: "",
+    showBusinessHours: true,
+    businessHoursWeekdays: "8:00 AM - 6:00 PM",
+    businessHoursSaturday: "9:00 AM - 2:00 PM",
+    businessHoursSunday: "Closed",
+    aboutText: ""
   });
   const [saving, setSaving] = useState(false);
 
   useEffect(() => {
     const unsub = onSnapshot(doc(db, "settings", "global"), (doc) => {
-      if (doc.exists()) setSettings(doc.data());
+      if (doc.exists()) {
+        const data = doc.data();
+        setSettings({
+          companyName: "",
+          logoUrl: "",
+          phoneNumber: "",
+          lineId: "",
+          whatsappNumber: "",
+          messagingPlatform: "both",
+          email: "",
+          address: "",
+          googleMapUrl: "",
+          showBusinessHours: true,
+          businessHoursWeekdays: "8:00 AM - 6:00 PM",
+          businessHoursSaturday: "9:00 AM - 2:00 PM",
+          businessHoursSunday: "Closed",
+          aboutText: "",
+          ...data
+        });
+      }
     }, (error) => {
       handleFirestoreError(error, OperationType.GET, "settings/global");
     });
     return () => unsub();
   }, []);
+
+  const handleFileUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    if (file.size > 1.5 * 1024 * 1024) {
+      toast.error("Logo image must be under 1.5MB");
+      return;
+    }
+    const reader = new FileReader();
+    reader.onload = (event) => {
+      if (event.target?.result) {
+        setSettings((prev: any) => ({ ...prev, logoUrl: event.target?.result as string }));
+        toast.success("Logo loaded from file");
+      }
+    };
+    reader.readAsDataURL(file);
+  };
 
   const handleSave = async () => {
     setSaving(true);
@@ -936,89 +1115,356 @@ function SettingsEditor() {
   };
 
   return (
-    <div className="bg-white rounded-2xl shadow-sm border border-slate-200 p-6 max-w-3xl">
-      <div className="flex justify-between items-center mb-6">
-        <h2 className="text-2xl font-bold text-slate-900">Global Site Settings</h2>
+    <div className="bg-white rounded-2xl shadow-sm border border-slate-200 p-6 md:p-8 max-w-4xl">
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-6 mb-6 border-b border-slate-100">
+        <div>
+          <h2 className="text-2xl font-bold text-slate-900">Global Site Settings</h2>
+          <p className="text-sm text-slate-500 mt-1">Configure company identity, contact channels, Google Maps location, and business hours</p>
+        </div>
         <button
           onClick={handleSave}
           disabled={saving}
-          className="bg-blue-600 text-white px-4 py-2 rounded-lg flex items-center gap-2 hover:bg-blue-700 transition disabled:opacity-50"
+          className="bg-blue-600 text-white px-5 py-2.5 rounded-xl flex items-center justify-center gap-2 hover:bg-blue-700 transition font-medium shadow-sm disabled:opacity-50"
         >
-          <Save size={18} /> {saving ? "Saving..." : "Save Changes"}
+          <Save size={18} /> {saving ? "Saving..." : "Save Settings"}
         </button>
       </div>
 
-      <div className="space-y-6">
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-          <div className="md:col-span-2">
-            <label className="block text-sm font-medium text-slate-700 mb-1">Company Name</label>
-            <input
-              type="text"
-              value={settings.companyName || ""}
-              onChange={(e) => setSettings({ ...settings, companyName: e.target.value })}
-              className="w-full px-3 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none"
-              placeholder="e.g., V Mind"
-            />
-          </div>
-          <div className="md:col-span-2">
-            <label className="block text-sm font-medium text-slate-700 mb-1">Logo URL</label>
-            <input
-              type="text"
-              value={settings.logoUrl || ""}
-              onChange={(e) => setSettings({ ...settings, logoUrl: e.target.value })}
-              className="w-full px-3 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none"
-              placeholder="https://example.com/logo.png"
-            />
-            {settings.logoUrl && (
-              <div className="mt-2 p-2 border border-slate-200 rounded-lg bg-slate-50 inline-block">
-                <img src={getDirectImageUrl(settings.logoUrl)} alt="Logo Preview" className="h-12 w-auto object-contain" referrerPolicy="no-referrer" />
-              </div>
-            )}
-          </div>
-          <div>
-            <label className="block text-sm font-medium text-slate-700 mb-1">Phone Number</label>
-            <input
-              type="text"
-              value={settings.phoneNumber || ""}
-              onChange={(e) => setSettings({ ...settings, phoneNumber: e.target.value })}
-              className="w-full px-3 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none"
-            />
-          </div>
-          <div>
-            <label className="block text-sm font-medium text-slate-700 mb-1">LINE ID</label>
-            <input
-              type="text"
-              value={settings.lineId || ""}
-              onChange={(e) => setSettings({ ...settings, lineId: e.target.value })}
-              className="w-full px-3 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none"
-            />
-          </div>
-          <div>
-            <label className="block text-sm font-medium text-slate-700 mb-1">Email Address</label>
-            <input
-              type="email"
-              value={settings.email || ""}
-              onChange={(e) => setSettings({ ...settings, email: e.target.value })}
-              className="w-full px-3 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none"
-            />
-          </div>
-          <div>
-            <label className="block text-sm font-medium text-slate-700 mb-1">Physical Address</label>
-            <input
-              type="text"
-              value={settings.address || ""}
-              onChange={(e) => setSettings({ ...settings, address: e.target.value })}
-              className="w-full px-3 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none"
-            />
+      <div className="space-y-8">
+        {/* Language Configuration Option */}
+        <div>
+          <h3 className="text-base font-bold text-slate-900 mb-4 flex items-center gap-2">
+            <Globe size={18} className="text-blue-600" />
+            Website Language Options (EN / TH / Both)
+          </h3>
+          <div className="bg-slate-50/60 p-5 rounded-2xl border border-slate-100 space-y-3">
+            <label className="block text-sm font-semibold text-slate-700">
+              Active Language Option for Website Visitors:
+            </label>
+            <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+              {[
+                { 
+                  value: "both", 
+                  label: "Both Languages (EN & TH)", 
+                  desc: "Shows language switcher (EN / TH) for visitors",
+                  badge: "Default"
+                },
+                { 
+                  value: "en", 
+                  label: "English Only", 
+                  desc: "Forces site to English & hides language switcher",
+                  badge: "EN"
+                },
+                { 
+                  value: "th", 
+                  label: "Thai Only", 
+                  desc: "Forces site to Thai & hides language switcher",
+                  badge: "TH"
+                },
+              ].map((opt) => {
+                const isSelected = (settings.enabledLanguages || "both") === opt.value;
+                return (
+                  <button
+                    key={opt.value}
+                    type="button"
+                    onClick={() => setSettings({ ...settings, enabledLanguages: opt.value })}
+                    className={`p-4 rounded-xl border text-left transition-all relative ${
+                      isSelected
+                        ? "bg-blue-50/90 border-blue-500 text-blue-950 ring-2 ring-blue-500/20 shadow-xs"
+                        : "bg-white border-slate-200 hover:border-slate-300 text-slate-700"
+                    }`}
+                  >
+                    <div className="flex items-center justify-between gap-2 mb-1">
+                      <span className="font-bold text-sm">{opt.label}</span>
+                      <span className={`text-[10px] px-2 py-0.5 rounded font-bold uppercase ${
+                        isSelected ? "bg-blue-600 text-white" : "bg-slate-100 text-slate-500"
+                      }`}>
+                        {opt.badge}
+                      </span>
+                    </div>
+                    <p className="text-xs text-slate-500 leading-relaxed">{opt.desc}</p>
+                  </button>
+                );
+              })}
+            </div>
+            <p className="text-xs text-slate-400 italic">
+              * When "English Only" or "Thai Only" is selected, the language switcher button is hidden from visitors and the site renders in the chosen language.
+            </p>
           </div>
         </div>
+
+        {/* Company Identity */}
         <div>
-          <label className="block text-sm font-medium text-slate-700 mb-1">About Text (Footer)</label>
+          <h3 className="text-base font-bold text-slate-900 mb-4 flex items-center gap-2">
+            <Zap size={18} className="text-blue-600" />
+            Company Branding
+          </h3>
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-6 bg-slate-50/60 p-5 rounded-2xl border border-slate-100">
+            <div className="md:col-span-2">
+              <label className="block text-sm font-semibold text-slate-700 mb-1.5">Company Name</label>
+              <input
+                type="text"
+                value={settings.companyName || ""}
+                onChange={(e) => setSettings({ ...settings, companyName: e.target.value })}
+                className="w-full px-3.5 py-2.5 bg-white border border-slate-300 rounded-xl focus:ring-2 focus:ring-blue-500 outline-none transition"
+                placeholder="e.g., V Mind"
+              />
+            </div>
+
+            <div className="md:col-span-2">
+              <label className="block text-sm font-semibold text-slate-700 mb-1.5">
+                Company Logo URL / File
+              </label>
+              <div className="flex flex-col sm:flex-row gap-3 items-start">
+                <div className="flex-1 w-full">
+                  <input
+                    type="text"
+                    value={settings.logoUrl || ""}
+                    onChange={(e) => setSettings({ ...settings, logoUrl: e.target.value })}
+                    className="w-full px-3.5 py-2.5 bg-white border border-slate-300 rounded-xl focus:ring-2 focus:ring-blue-500 outline-none transition text-sm font-mono"
+                    placeholder="https://drive.google.com/file/d/... or direct image link"
+                  />
+                  <p className="text-xs text-slate-400 mt-1">
+                    Supports Google Drive, Dropbox, direct image links, or direct file upload. Used in both Header and Footer.
+                  </p>
+                </div>
+                <label className="px-4 py-2.5 bg-white border border-slate-300 hover:bg-slate-50 rounded-xl cursor-pointer text-sm font-semibold text-slate-700 flex items-center gap-2 shrink-0 shadow-xs transition">
+                  <Upload size={16} />
+                  <span>Upload Logo</span>
+                  <input type="file" accept="image/*" onChange={handleFileUpload} className="hidden" />
+                </label>
+              </div>
+
+              {settings.logoUrl && (
+                <div className="mt-3 p-3 border border-slate-200 rounded-xl bg-white inline-flex items-center gap-4 shadow-xs">
+                  <div className="h-12 w-28 bg-slate-100 rounded-lg p-1 flex items-center justify-center overflow-hidden border border-slate-200">
+                    <SmartImage src={settings.logoUrl} alt="Logo Preview" className="max-h-full max-w-full object-contain" />
+                  </div>
+                  <div>
+                    <p className="text-xs font-semibold text-slate-700">Live Header & Footer Preview</p>
+                    <p className="text-[11px] text-slate-400">Used consistently across the entire site</p>
+                  </div>
+                </div>
+              )}
+            </div>
+          </div>
+        </div>
+
+        {/* Contact Channels & Messaging Platform Options */}
+        <div>
+          <h3 className="text-base font-bold text-slate-900 mb-4 flex items-center gap-2">
+            <Phone size={18} className="text-blue-600" />
+            Contact Channels & Messaging Apps
+          </h3>
+          <div className="bg-slate-50/60 p-5 rounded-2xl border border-slate-100 space-y-6">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+              <div>
+                <label className="block text-sm font-semibold text-slate-700 mb-1.5">Phone Number</label>
+                <input
+                  type="text"
+                  value={settings.phoneNumber || ""}
+                  onChange={(e) => setSettings({ ...settings, phoneNumber: e.target.value })}
+                  className="w-full px-3.5 py-2.5 bg-white border border-slate-300 rounded-xl focus:ring-2 focus:ring-blue-500 outline-none transition"
+                  placeholder="+66 81 234 5678"
+                />
+              </div>
+              <div>
+                <label className="block text-sm font-semibold text-slate-700 mb-1.5">Email Address</label>
+                <input
+                  type="email"
+                  value={settings.email || ""}
+                  onChange={(e) => setSettings({ ...settings, email: e.target.value })}
+                  className="w-full px-3.5 py-2.5 bg-white border border-slate-300 rounded-xl focus:ring-2 focus:ring-blue-500 outline-none transition"
+                  placeholder="contact@vmind.com"
+                />
+              </div>
+            </div>
+
+            {/* Messaging Platform Choice: LINE, WhatsApp, or BOTH */}
+            <div className="pt-4 border-t border-slate-200/60">
+              <label className="block text-sm font-semibold text-slate-700 mb-2">
+                Messaging Apps Display Option in Contact Information:
+              </label>
+              <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+                {[
+                  { value: "both", label: "Show Both", sub: "LINE & WhatsApp" },
+                  { value: "line", label: "LINE App Only", sub: "Only LINE ID" },
+                  { value: "whatsapp", label: "WhatsApp Only", sub: "Only WhatsApp" },
+                  { value: "none", label: "None", sub: "Hide Messaging" },
+                ].map((opt) => (
+                  <button
+                    key={opt.value}
+                    type="button"
+                    onClick={() => setSettings({ ...settings, messagingPlatform: opt.value })}
+                    className={`p-3 rounded-xl border text-left transition-all ${
+                      (settings.messagingPlatform || "both") === opt.value
+                        ? "bg-blue-50/80 border-blue-500 text-blue-900 ring-2 ring-blue-500/20 shadow-xs"
+                        : "bg-white border-slate-200 hover:border-slate-300 text-slate-700"
+                    }`}
+                  >
+                    <div className="font-semibold text-sm">{opt.label}</div>
+                    <div className="text-xs text-slate-500 mt-0.5">{opt.sub}</div>
+                  </button>
+                ))}
+              </div>
+            </div>
+
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+              <div>
+                <label className="block text-sm font-semibold text-slate-700 mb-1.5 flex items-center gap-1.5">
+                  <span className="w-2.5 h-2.5 rounded-full bg-[#00B900]" />
+                  LINE ID / Link
+                </label>
+                <input
+                  type="text"
+                  value={settings.lineId || ""}
+                  onChange={(e) => setSettings({ ...settings, lineId: e.target.value })}
+                  className="w-full px-3.5 py-2.5 bg-white border border-slate-300 rounded-xl focus:ring-2 focus:ring-blue-500 outline-none transition"
+                  placeholder="e.g., @vmind or vmind_line"
+                />
+                <p className="text-xs text-slate-400 mt-1">Will automatically generate a clickable LINE chat link.</p>
+              </div>
+
+              <div>
+                <label className="block text-sm font-semibold text-slate-700 mb-1.5 flex items-center gap-1.5">
+                  <span className="w-2.5 h-2.5 rounded-full bg-[#25D366]" />
+                  WhatsApp Number / Link
+                </label>
+                <input
+                  type="text"
+                  value={settings.whatsappNumber || ""}
+                  onChange={(e) => setSettings({ ...settings, whatsappNumber: e.target.value })}
+                  className="w-full px-3.5 py-2.5 bg-white border border-slate-300 rounded-xl focus:ring-2 focus:ring-blue-500 outline-none transition"
+                  placeholder="e.g., +66812345678 or https://wa.me/..."
+                />
+                <p className="text-xs text-slate-400 mt-1">International format with country code (e.g. +66...).</p>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        {/* Address & Google Maps Location */}
+        <div>
+          <h3 className="text-base font-bold text-slate-900 mb-4 flex items-center gap-2">
+            <MapPin size={18} className="text-blue-600" />
+            Address & Google Map Location
+          </h3>
+          <div className="bg-slate-50/60 p-5 rounded-2xl border border-slate-100 space-y-5">
+            <div>
+              <label className="block text-sm font-semibold text-slate-700 mb-1.5">Physical Address</label>
+              <textarea
+                rows={2}
+                value={settings.address || ""}
+                onChange={(e) => setSettings({ ...settings, address: e.target.value })}
+                className="w-full px-3.5 py-2.5 bg-white border border-slate-300 rounded-xl focus:ring-2 focus:ring-blue-500 outline-none transition resize-none"
+                placeholder="123 Tech Park Avenue, Suite 400, Bangkok, Thailand"
+              />
+            </div>
+
+            <div>
+              <div className="flex items-center justify-between mb-1.5">
+                <label className="text-sm font-semibold text-slate-700 flex items-center gap-2">
+                  <Navigation size={15} className="text-purple-600" />
+                  Google Map Location Link URL
+                </label>
+                {settings.googleMapUrl && (
+                  <a
+                    href={settings.googleMapUrl}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="text-xs font-semibold text-blue-600 hover:text-blue-700 flex items-center gap-1"
+                  >
+                    <span>Test Map Link</span>
+                    <ExternalLink size={12} />
+                  </a>
+                )}
+              </div>
+              <input
+                type="text"
+                value={settings.googleMapUrl || ""}
+                onChange={(e) => setSettings({ ...settings, googleMapUrl: e.target.value })}
+                className="w-full px-3.5 py-2.5 bg-white border border-slate-300 rounded-xl focus:ring-2 focus:ring-blue-500 outline-none transition font-mono text-sm"
+                placeholder="https://maps.app.goo.gl/... or https://www.google.com/maps/place/..."
+              />
+              <p className="text-xs text-slate-500 mt-1.5">
+                📌 <strong>How to get this link:</strong> Search your shop on Google Maps &rarr; Click <em>Share</em> &rarr; Click <em>Copy Link</em> &rarr; Paste here. Customers will see a direct map icon under your address to navigate straight to your shop!
+              </p>
+            </div>
+          </div>
+        </div>
+
+        {/* Business Hours Option */}
+        <div>
+          <div className="flex items-center justify-between mb-4">
+            <h3 className="text-base font-bold text-slate-900 flex items-center gap-2">
+              <Clock size={18} className="text-blue-600" />
+              Business Hours Section
+            </h3>
+            <label className="flex items-center gap-2.5 cursor-pointer select-none">
+              <input
+                type="checkbox"
+                checked={settings.showBusinessHours !== false}
+                onChange={(e) => setSettings({ ...settings, showBusinessHours: e.target.checked })}
+                className="w-4 h-4 text-blue-600 rounded border-slate-300 focus:ring-blue-500"
+              />
+              <span className="text-sm font-semibold text-slate-700">
+                {settings.showBusinessHours !== false ? "Enabled (Visible)" : "Disabled (Hidden)"}
+              </span>
+            </label>
+          </div>
+
+          <div className={`p-5 rounded-2xl border transition-all ${
+            settings.showBusinessHours !== false 
+              ? "bg-slate-50/60 border-slate-100 opacity-100" 
+              : "bg-slate-100/50 border-slate-200 opacity-60 pointer-events-none"
+          }`}>
+            <p className="text-xs text-slate-500 mb-4">
+              Control and customize the working hours displayed on the Contact page.
+            </p>
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+              <div>
+                <label className="block text-xs font-bold text-slate-600 uppercase tracking-wider mb-1">Monday - Friday</label>
+                <input
+                  type="text"
+                  value={settings.businessHoursWeekdays || ""}
+                  onChange={(e) => setSettings({ ...settings, businessHoursWeekdays: e.target.value })}
+                  className="w-full px-3 py-2 bg-white border border-slate-300 rounded-lg text-sm focus:ring-2 focus:ring-blue-500 outline-none"
+                  placeholder="8:00 AM - 6:00 PM"
+                />
+              </div>
+              <div>
+                <label className="block text-xs font-bold text-slate-600 uppercase tracking-wider mb-1">Saturday</label>
+                <input
+                  type="text"
+                  value={settings.businessHoursSaturday || ""}
+                  onChange={(e) => setSettings({ ...settings, businessHoursSaturday: e.target.value })}
+                  className="w-full px-3 py-2 bg-white border border-slate-300 rounded-lg text-sm focus:ring-2 focus:ring-blue-500 outline-none"
+                  placeholder="9:00 AM - 2:00 PM"
+                />
+              </div>
+              <div>
+                <label className="block text-xs font-bold text-slate-600 uppercase tracking-wider mb-1">Sunday</label>
+                <input
+                  type="text"
+                  value={settings.businessHoursSunday || ""}
+                  onChange={(e) => setSettings({ ...settings, businessHoursSunday: e.target.value })}
+                  className="w-full px-3 py-2 bg-white border border-slate-300 rounded-lg text-sm focus:ring-2 focus:ring-blue-500 outline-none"
+                  placeholder="Closed"
+                />
+              </div>
+            </div>
+          </div>
+        </div>
+
+        {/* Footer About Text */}
+        <div>
+          <h3 className="text-base font-bold text-slate-900 mb-2">About Text (Footer)</h3>
           <textarea
-            rows={4}
+            rows={3}
             value={settings.aboutText || ""}
             onChange={(e) => setSettings({ ...settings, aboutText: e.target.value })}
-            className="w-full px-3 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none resize-none"
+            className="w-full px-3.5 py-2.5 border border-slate-300 rounded-xl focus:ring-2 focus:ring-blue-500 outline-none resize-none"
+            placeholder="Professional electrical, security, and networking solutions..."
           />
         </div>
       </div>

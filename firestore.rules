@@ -27,13 +27,26 @@ service cloud.firestore {
     // ===============================================================
     
     function isValidGlobalSettings(data) {
-      return hasOnlyAllowedFields(['companyName', 'logoUrl', 'phoneNumber', 'lineId', 'email', 'address', 'aboutText']) &&
+      return hasOnlyAllowedFields([
+               'companyName', 'logoUrl', 'phoneNumber', 'lineId', 'whatsappNumber',
+               'messagingPlatform', 'email', 'address', 'googleMapUrl', 'enabledLanguages',
+               'showBusinessHours', 'businessHoursWeekdays', 'businessHoursSaturday',
+               'businessHoursSunday', 'aboutText'
+             ]) &&
              (!('companyName' in data) || (data.companyName is string && data.companyName.size() <= 200)) &&
-             (!('logoUrl' in data) || (data.logoUrl is string && data.logoUrl.size() <= 500)) &&
-             (!('phoneNumber' in data) || (data.phoneNumber is string && data.phoneNumber.size() <= 50)) &&
-             (!('lineId' in data) || (data.lineId is string && data.lineId.size() <= 100)) &&
-             (!('email' in data) || (data.email is string && data.email.size() <= 100)) &&
-             (!('address' in data) || (data.address is string && data.address.size() <= 500)) &&
+             (!('logoUrl' in data) || (data.logoUrl is string && data.logoUrl.size() <= 5000)) &&
+             (!('phoneNumber' in data) || (data.phoneNumber is string && data.phoneNumber.size() <= 100)) &&
+             (!('lineId' in data) || (data.lineId is string && data.lineId.size() <= 200)) &&
+             (!('whatsappNumber' in data) || (data.whatsappNumber is string && data.whatsappNumber.size() <= 200)) &&
+             (!('messagingPlatform' in data) || (data.messagingPlatform is string && data.messagingPlatform.size() <= 50)) &&
+             (!('email' in data) || (data.email is string && data.email.size() <= 200)) &&
+             (!('address' in data) || (data.address is string && data.address.size() <= 1000)) &&
+             (!('googleMapUrl' in data) || (data.googleMapUrl is string && data.googleMapUrl.size() <= 2000)) &&
+             (!('enabledLanguages' in data) || (data.enabledLanguages is string && data.enabledLanguages in ['both', 'en', 'th'])) &&
+             (!('showBusinessHours' in data) || data.showBusinessHours is bool) &&
+             (!('businessHoursWeekdays' in data) || (data.businessHoursWeekdays is string && data.businessHoursWeekdays.size() <= 200)) &&
+             (!('businessHoursSaturday' in data) || (data.businessHoursSaturday is string && data.businessHoursSaturday.size() <= 200)) &&
+             (!('businessHoursSunday' in data) || (data.businessHoursSunday is string && data.businessHoursSunday.size() <= 200)) &&
              (!('aboutText' in data) || (data.aboutText is string && data.aboutText.size() <= 5000));
     }
 

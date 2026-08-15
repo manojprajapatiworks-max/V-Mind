@@ -99,7 +99,7 @@ export default function Home() {
   return (
     <div className="flex flex-col min-h-screen">
       {/* Hero Section */}
-      <section className={`relative text-white overflow-hidden py-32 md:py-48 flex items-center justify-center min-h-[90vh] ${heroBg.className}`}>
+      <section className={`relative text-white overflow-hidden py-24 sm:py-32 md:py-48 flex items-center justify-center min-h-[85vh] sm:min-h-[90vh] ${heroBg.className}`}>
         {hero.backgroundId === "moving-dots" && <HeroParticles />}
         {hero.backgroundId === "floating-orbs" && <HeroOrbs />}
         
@@ -117,30 +117,30 @@ export default function Home() {
             transition={{ duration: 0.8, ease: "easeOut" }}
             className="text-center max-w-5xl mx-auto"
           >
-            <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-white/5 border border-white/10 backdrop-blur-md mb-8">
+            <div className="inline-flex items-center gap-2 px-3.5 py-1.5 sm:px-4 sm:py-2 rounded-full bg-white/5 border border-white/10 backdrop-blur-md mb-6 sm:mb-8">
               <span className="flex h-2 w-2 rounded-full bg-cyan-400 animate-pulse"></span>
-              <span className="text-sm font-medium text-slate-300">Next-Gen Infrastructure Solutions</span>
+              <span className="text-xs sm:text-sm font-medium text-slate-300">Next-Gen Infrastructure Solutions</span>
             </div>
             
-            <h1 className="text-5xl md:text-7xl lg:text-8xl font-display font-bold tracking-tight mb-8 leading-[1.1]">
+            <h1 className="text-3xl sm:text-5xl md:text-7xl lg:text-8xl font-display font-bold tracking-tight mb-5 sm:mb-8 leading-[1.15] sm:leading-[1.1]">
               <span className="text-white">{heroTitle}</span>
             </h1>
             
-            <p className="text-lg md:text-2xl text-slate-400 mb-12 max-w-3xl mx-auto leading-relaxed font-light">
+            <p className="text-base sm:text-lg md:text-2xl text-slate-300 sm:text-slate-400 mb-8 sm:mb-12 max-w-3xl mx-auto leading-relaxed font-light px-2 sm:px-0">
               {heroSubtitle}
             </p>
             
-            <div className="flex flex-col sm:flex-row gap-5 justify-center items-center">
+            <div className="flex flex-col sm:flex-row gap-4 sm:gap-5 justify-center items-center max-w-md sm:max-w-none mx-auto w-full">
               <Link
                 to="/services"
-                className="w-full sm:w-auto bg-gradient-to-r from-blue-600 to-cyan-500 hover:from-blue-500 hover:to-cyan-400 text-white font-semibold px-8 py-4 rounded-full transition-all shadow-[0_0_40px_-10px_rgba(6,182,212,0.5)] hover:shadow-[0_0_60px_-15px_rgba(6,182,212,0.7)] flex items-center justify-center gap-2 group text-lg"
+                className="w-full sm:w-auto bg-gradient-to-r from-blue-600 to-cyan-500 hover:from-blue-500 hover:to-cyan-400 text-white font-semibold px-6 sm:px-8 py-3.5 sm:py-4 rounded-full transition-all shadow-[0_0_40px_-10px_rgba(6,182,212,0.5)] hover:shadow-[0_0_60px_-15px_rgba(6,182,212,0.7)] flex items-center justify-center gap-2 group text-base sm:text-lg"
               >
                 Explore Services 
-                <ArrowRight size={20} className="group-hover:translate-x-1 transition-transform" />
+                <ArrowRight size={18} className="group-hover:translate-x-1 transition-transform sm:size-[20px]" />
               </Link>
               <Link
                 to="/contact"
-                className="w-full sm:w-auto bg-white/5 hover:bg-white/10 backdrop-blur-md border border-white/10 text-white font-semibold px-8 py-4 rounded-full transition-all flex items-center justify-center gap-2 text-lg"
+                className="w-full sm:w-auto bg-white/5 hover:bg-white/10 backdrop-blur-md border border-white/10 text-white font-semibold px-6 sm:px-8 py-3.5 sm:py-4 rounded-full transition-all flex items-center justify-center gap-2 text-base sm:text-lg"
               >
                 Get a Free Quote
               </Link>
@@ -152,32 +152,32 @@ export default function Home() {
         <motion.div 
           animate={{ y: [0, 10, 0] }}
           transition={{ repeat: Infinity, duration: 2 }}
-          className="absolute bottom-10 left-1/2 -translate-x-1/2 text-slate-500"
+          className="absolute bottom-6 sm:bottom-10 left-1/2 -translate-x-1/2 text-slate-500 hidden sm:block"
         >
-          <div className="w-[30px] h-[50px] rounded-full border-2 border-slate-700 flex justify-center p-2">
-            <div className="w-1 h-3 bg-slate-500 rounded-full" />
+          <div className="w-[28px] h-[46px] rounded-full border-2 border-slate-700 flex justify-center p-1.5">
+            <div className="w-1 h-2.5 bg-slate-500 rounded-full" />
           </div>
         </motion.div>
       </section>
 
       {/* Stats Section */}
-      <section className="py-12 bg-white border-b border-slate-100 relative z-20 -mt-10 mx-4 md:mx-auto max-w-5xl rounded-3xl shadow-xl shadow-slate-200/50">
-        <div className="grid grid-cols-2 md:grid-cols-4 gap-8 px-8">
-          <div className="text-center">
-            <div className="text-4xl font-display font-bold text-slate-900 mb-1">{stats.yearsExp}+</div>
-            <div className="text-sm font-medium text-slate-500 uppercase tracking-wider">Years Exp.</div>
+      <section className="py-8 sm:py-12 bg-white border-b border-slate-100 relative z-20 -mt-6 sm:-mt-10 mx-4 md:mx-auto max-w-5xl rounded-2xl sm:rounded-3xl shadow-xl shadow-slate-200/50">
+        <div className="grid grid-cols-2 md:grid-cols-4 gap-4 sm:gap-8 px-4 sm:px-8">
+          <div className="text-center p-2">
+            <div className="text-2xl sm:text-4xl font-display font-bold text-slate-900 mb-1">{stats.yearsExp}+</div>
+            <div className="text-xs sm:text-sm font-medium text-slate-500 uppercase tracking-wider">Years Exp.</div>
           </div>
-          <div className="text-center">
-            <div className="text-4xl font-display font-bold text-slate-900 mb-1">{stats.projects}+</div>
-            <div className="text-sm font-medium text-slate-500 uppercase tracking-wider">Projects</div>
+          <div className="text-center p-2">
+            <div className="text-2xl sm:text-4xl font-display font-bold text-slate-900 mb-1">{stats.projects}+</div>
+            <div className="text-xs sm:text-sm font-medium text-slate-500 uppercase tracking-wider">Projects</div>
           </div>
-          <div className="text-center">
-            <div className="text-4xl font-display font-bold text-slate-900 mb-1">{stats.satisfaction}%</div>
-            <div className="text-sm font-medium text-slate-500 uppercase tracking-wider">Satisfaction</div>
+          <div className="text-center p-2">
+            <div className="text-2xl sm:text-4xl font-display font-bold text-slate-900 mb-1">{stats.satisfaction}%</div>
+            <div className="text-xs sm:text-sm font-medium text-slate-500 uppercase tracking-wider">Satisfaction</div>
           </div>
-          <div className="text-center">
-            <div className="text-4xl font-display font-bold text-slate-900 mb-1">{stats.support}</div>
-            <div className="text-sm font-medium text-slate-500 uppercase tracking-wider">Support</div>
+          <div className="text-center p-2">
+            <div className="text-2xl sm:text-4xl font-display font-bold text-slate-900 mb-1">{stats.support}</div>
+            <div className="text-xs sm:text-sm font-medium text-slate-500 uppercase tracking-wider">Support</div>
           </div>
         </div>
       </section>

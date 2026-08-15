@@ -9,8 +9,16 @@
         "logoUrl": { "type": "string" },
         "phoneNumber": { "type": "string" },
         "lineId": { "type": "string" },
+        "whatsappNumber": { "type": "string" },
+        "messagingPlatform": { "type": "string" },
         "email": { "type": "string" },
         "address": { "type": "string" },
+        "googleMapUrl": { "type": "string" },
+        "enabledLanguages": { "type": "string" },
+        "showBusinessHours": { "type": "boolean" },
+        "businessHoursWeekdays": { "type": "string" },
+        "businessHoursSaturday": { "type": "string" },
+        "businessHoursSunday": { "type": "string" },
         "aboutText": { "type": "string" }
       }
     },
